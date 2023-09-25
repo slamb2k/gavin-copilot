@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Package CiopilotChat's WebAPI for deployment to Azure
+# Package Chat Copilot application for deployment to Azure
 
 set -e
 
@@ -66,11 +66,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+echo  "Building backend executables..."
+
 # Set defaults
 : "${CONFIGURATION:="Release"}"
 : "${DOTNET:="net6.0"}"
 : "${RUNTIME:="linux-x64"}"
-: "${VERSION:="1.0.0"}"
+: "${VERSION:="0.0.0"}"
 : "${INFO:=""}"
 : "${OUTPUT_DIRECTORY:="$SCRIPT_ROOT"}"
 
@@ -91,6 +93,39 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+echo "Building static frontend files..."
+
+ENV_FILE_PATH="$SCRIPT_ROOT/../../webapp/.env"
+echo "Writing environment variables to '$ENV_FILE_PATH'..."
+echo "REACT_APP_BACKEND_URI=<-=TOKEN=->Frontend:BackendUri</-=TOKEN=->" > $ENV_FILE_PATH
+echo "REACT_APP_AUTH_TYPE=AzureAd" >> $ENV_FILE_PATH
+echo "REACT_APP_AAD_AUTHORITY=<-=TOKEN=->Authentication:AzureAd:Instance</-=TOKEN=->/<-=TOKEN=->Authentication:AzureAd:TenantId</-=TOKEN=->" >> $ENV_FILE_PATH
+echo "REACT_APP_AAD_CLIENT_ID=<-=TOKEN=->Frontend:AadClientId</-=TOKEN=->" >> $ENV_FILE_PATH
+echo "REACT_APP_AAD_API_SCOPE=api://<-=TOKEN=->Authentication:AzureAd:ClientId</-=TOKEN=->/<-=TOKEN=->Authentication:AzureAd:Scopes</-=TOKEN=->" >> $ENV_FILE_PATH
+echo "REACT_APP_SK_VERSION=$VERSION" >> $ENV_FILE_PATH
+echo "REACT_APP_SK_BUILD_INFO=$VERSION_INFO" >> $ENV_FILE_PATH
+
+pushd "$SCRIPT_ROOT/../../webapp"
+
+echo "Installing yarn dependencies..."
+yarn install
+if [ $? -ne 0 ]; then
+    echo "Failed to install yarn dependencies"
+    exit 1
+fi
+
+echo "Building webapp..."
+yarn build
+if [ $? -ne 0 ]; then
+    echo "Failed to build webapp"
+    exit 1
+fi
+
+popd
+
+echo "Copying frontend files to package"
+cp -R "$SCRIPT_ROOT/../../webapp/build" "$PUBLISH_OUTPUT_DIRECTORY/wwwroot"
+
 # if not NO_ZIP then zip the package
 if [[ -z "$NO_ZIP" ]]; then
     pushd "$PUBLISH_OUTPUT_DIRECTORY"
@@ -98,5 +133,3 @@ if [[ -z "$NO_ZIP" ]]; then
     zip -r $PACKAGE_FILE_PATH .
     popd
 fi
-
-
