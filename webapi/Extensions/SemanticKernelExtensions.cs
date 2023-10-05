@@ -167,26 +167,6 @@ internal static class SemanticKernelExtensions
         return kernel;
     }
 
-    /// <summary>
-    /// Invokes an asynchronous callback function and tags any exception that occurs with function name.
-    /// </summary>
-    /// <typeparam name="T">The type of the result returned by the callback function.</typeparam>
-    /// <param name="callback">The asynchronous callback function to invoke.</param>
-    /// <param name="functionName">The name of the function that calls this method, for logging purposes.</param>
-    /// <returns>A task that represents the asynchronous operation and contains the result of the callback function.</returns>
-    public static async Task<T> SafeInvokeAsync<T>(Func<Task<T>> callback, string functionName)
-    {
-        try
-        {
-            // Invoke the callback and await the result
-            return await callback();
-        }
-        catch (Exception ex)
-        {
-            throw new SKException($"{functionName} failed.", ex);
-        }
-    }
-
     private static void InitializeKernelProvider(this WebApplicationBuilder builder)
     {
         builder.Services.AddSingleton(sp => new SemanticKernelProvider(sp, builder.Configuration));
@@ -273,18 +253,14 @@ internal static class SemanticKernelExtensions
     internal static void AddContentSafety(this IServiceCollection services)
     {
         IConfiguration configuration = services.BuildServiceProvider().GetRequiredService<IConfiguration>();
-        var options = configuration.GetSection(ContentSafetyOptions.PropertyName).Get<ContentSafetyOptions>();
-
-        if (options?.Enabled ?? false)
-        {
-            services.AddSingleton<IContentSafetyService, AzureContentSafety>(sp => new AzureContentSafety(new Uri(options.Endpoint), options.Key, options));
-        }
+        var options = configuration.GetSection(ContentSafetyOptions.PropertyName).Get<ContentSafetyOptions>() ?? new ContentSafetyOptions { Enabled = false };
+        services.AddSingleton<IContentSafetyService>(sp => new AzureContentSafety(options.Endpoint, options.Key));
     }
 
     /// <summary>
     /// Get the embedding model from the configuration.
     /// </summary>
-    private static BotEmbeddingConfig WithBotConfig(this IServiceProvider provider, IConfiguration configuration)
+    private static ChatArchiveEmbeddingConfig WithBotConfig(this IServiceProvider provider, IConfiguration configuration)
     {
         var memoryOptions = provider.GetRequiredService<IOptions<SemanticMemoryConfig>>().Value;
 
@@ -294,18 +270,18 @@ internal static class SemanticKernelExtensions
             case string y when y.Equals("AzureOpenAIEmbedding", StringComparison.OrdinalIgnoreCase):
                 var azureAIOptions = memoryOptions.GetServiceConfig<AzureOpenAIConfig>(configuration, "AzureOpenAIEmbedding");
                 return
-                    new BotEmbeddingConfig
+                    new ChatArchiveEmbeddingConfig
                     {
-                        AIService = BotEmbeddingConfig.AIServiceType.AzureOpenAIEmbedding,
+                        AIService = ChatArchiveEmbeddingConfig.AIServiceType.AzureOpenAIEmbedding,
                         DeploymentOrModelId = azureAIOptions.Deployment,
                     };
 
             case string x when x.Equals("OpenAI", StringComparison.OrdinalIgnoreCase):
                 var openAIOptions = memoryOptions.GetServiceConfig<OpenAIConfig>(configuration, "OpenAI");
                 return
-                    new BotEmbeddingConfig
+                    new ChatArchiveEmbeddingConfig
                     {
-                        AIService = BotEmbeddingConfig.AIServiceType.OpenAI,
+                        AIService = ChatArchiveEmbeddingConfig.AIServiceType.OpenAI,
                         DeploymentOrModelId = openAIOptions.EmbeddingModel,
                     };
 

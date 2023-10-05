@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using CopilotChat.WebApi.Extensions;
 using CopilotChat.WebApi.Models.Storage;
 using CopilotChat.WebApi.Options;
+using CopilotChat.WebApi.Skills.Utils;
 using CopilotChat.WebApi.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -74,10 +75,15 @@ public class SemanticMemoryRetriever
 
         // Search for relevant memories.
         List<(Citation Citation, Citation.Partition Memory)> relevantMemories = new();
+        List<Task> tasks = new();
         foreach (var memoryName in this._memoryNames)
         {
-            await SearchMemoryAsync(memoryName).ConfigureAwait(false);
+            tasks.Add(SearchMemoryAsync(memoryName));
         }
+        // Global document memory.
+        tasks.Add(SearchMemoryAsync(this._promptOptions.DocumentMemoryName, isGlobalMemory: true));
+        // Wait for all tasks to complete.
+        await Task.WhenAll(tasks);
 
         var builderMemory = new StringBuilder();
         IDictionary<string, CitationSource> citationMap = new Dictionary<string, CitationSource>(StringComparer.OrdinalIgnoreCase);
@@ -138,16 +144,15 @@ public class SemanticMemoryRetriever
         /// <summary>
         /// Search the memory for relevant memories by memory name.
         /// </summary>
-        async Task SearchMemoryAsync(string memoryName)
+        async Task SearchMemoryAsync(string memoryName, bool isGlobalMemory = false)
         {
             var searchResult =
                 await this._memoryClient.SearchMemoryAsync(
                     this._promptOptions.MemoryIndexName,
                     query,
                     this.CalculateRelevanceThreshold(memoryName, chatSession!.MemoryBalance),
-                    chatId,
-                    memoryName)
-                .ConfigureAwait(false);
+                    isGlobalMemory ? DocumentMemoryOptions.GlobalDocumentChatId.ToString() : chatId,
+                    memoryName);
 
             foreach (var result in searchResult.Results.SelectMany(c => c.Partitions.Select(p => (c, p))))
             {
@@ -166,7 +171,7 @@ public class SemanticMemoryRetriever
 
             foreach (var result in relevantMemories.OrderByDescending(m => m.Memory.Relevance))
             {
-                var tokenCount = TokenUtilities.TokenCount(result.Memory.Text);
+                var tokenCount = TokenUtils.TokenCount(result.Memory.Text);
                 if (remainingToken - tokenCount > 0)
                 {
                     if (result.Citation.Tags.TryGetValue(MemoryTags.TagMemory, out var tag) && tag.Count > 0)

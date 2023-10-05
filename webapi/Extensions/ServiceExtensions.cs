@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Reflection;
 using CopilotChat.WebApi.Auth;
 using CopilotChat.WebApi.Models.Storage;
@@ -16,8 +17,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
+using Microsoft.SemanticKernel.Diagnostics;
 using Microsoft.SemanticMemory;
 
 namespace CopilotChat.WebApi.Extensions;
@@ -41,29 +44,24 @@ public static class CopilotChatServiceExtensions
         // Authentication configuration
         AddOptions<ChatAuthenticationOptions>(ChatAuthenticationOptions.PropertyName);
 
-        // Chat log storage configuration
+        // Chat storage configuration
         AddOptions<ChatStoreOptions>(ChatStoreOptions.PropertyName);
 
         // Azure speech token configuration
         AddOptions<AzureSpeechOptions>(AzureSpeechOptions.PropertyName);
 
-        // Bot schema configuration
-        AddOptions<BotSchemaOptions>(BotSchemaOptions.PropertyName);
-
-        // Document memory options
         AddOptions<DocumentMemoryOptions>(DocumentMemoryOptions.PropertyName);
 
         // Chat prompt options
         AddOptions<PromptsOptions>(PromptsOptions.PropertyName);
 
-        // Planner options
         AddOptions<PlannerOptions>(PlannerOptions.PropertyName);
 
-        // Content safety options
         AddOptions<ContentSafetyOptions>(ContentSafetyOptions.PropertyName);
 
-        // Semantic memory options
         AddOptions<SemanticMemoryConfig>(SemanticMemoryOptionsName);
+
+        AddOptions<FrontendOptions>(FrontendOptions.PropertyName);
 
         return services;
 
@@ -89,7 +87,55 @@ public static class CopilotChatServiceExtensions
         return services.AddScoped<AskConverter>();
     }
 
-    internal static IServiceCollection AddMainetnanceServices(this IServiceCollection services)
+    internal static IServiceCollection AddPlugins(this IServiceCollection services, IConfiguration configuration)
+    {
+        var plugins = configuration.GetSection("Plugins").Get<List<Plugin>>() ?? new List<Plugin>();
+        var logger = services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+        logger.LogDebug("Found {0} plugins.", plugins.Count);
+
+        // Validate the plugins
+        Dictionary<string, Plugin> validatedPlugins = new();
+        foreach (Plugin plugin in plugins)
+        {
+            if (validatedPlugins.ContainsKey(plugin.Name))
+            {
+                logger.LogWarning("Plugin '{0}' is defined more than once. Skipping...", plugin.Name);
+                continue;
+            }
+
+            var pluginManifestUrl = PluginUtils.GetPluginManifestUri(plugin.ManifestDomain);
+            using var request = new HttpRequestMessage(HttpMethod.Get, pluginManifestUrl);
+            // Need to set the user agent to avoid 403s from some sites.
+            request.Headers.Add("User-Agent", Telemetry.HttpUserAgent);
+            try
+            {
+                logger.LogInformation("Adding plugin: {0}.", plugin.Name);
+                using var httpClient = new HttpClient();
+                var response = httpClient.SendAsync(request).Result;
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new InvalidOperationException($"Plugin '{plugin.Name}' at '{pluginManifestUrl}' returned status code '{response.StatusCode}'.");
+                }
+                validatedPlugins.Add(plugin.Name, plugin);
+                logger.LogInformation("Added plugin: {0}.", plugin.Name);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is AggregateException)
+            {
+                logger.LogWarning(ex, "Plugin '{0}' at {1} responded with error. Skipping...", plugin.Name, pluginManifestUrl);
+            }
+            catch (Exception ex) when (ex is UriFormatException)
+            {
+                logger.LogWarning("Plugin '{0}' at {1} is not a valid URL. Skipping...", plugin.Name, pluginManifestUrl);
+            }
+        }
+
+        // Add the plugins
+        services.AddSingleton<IDictionary<string, Plugin>>(validatedPlugins);
+
+        return services;
+    }
+
+    internal static IServiceCollection AddMaintenanceServices(this IServiceCollection services)
     {
         // Inject migration services
         services.AddSingleton<IChatMigrationMonitor, ChatMigrationMonitor>();
@@ -122,7 +168,7 @@ public static class CopilotChatServiceExtensions
                     policy =>
                     {
                         policy.WithOrigins(allowedOrigins)
-                            .WithMethods("GET", "POST", "DELETE")
+                            .WithMethods("POST", "GET", "PUT", "DELETE", "PATCH")
                             .AllowAnyHeader();
                     });
             });

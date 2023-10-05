@@ -35,6 +35,7 @@ import * as React from 'react';
 import { useRef } from 'react';
 import { useChat, useFile } from '../../../libs/hooks';
 import { ChatMemorySource } from '../../../libs/models/ChatMemorySource';
+import { Constants } from '../../../Constants';
 import { useAppSelector } from '../../../redux/app/hooks';
 import { RootState } from '../../../redux/app/store';
 import { timestampToDateString } from '../../utils/TextUtils';
@@ -86,7 +87,7 @@ export const DocumentsTab: React.FC = () => {
     const chat = useChat();
     const fileHandler = useFile();
 
-    const { serviceOptions } = useAppSelector((state: RootState) => state.app);
+    const { serviceInfo } = useAppSelector((state: RootState) => state.app);
     const { conversations, selectedId } = useAppSelector((state: RootState) => state.conversations);
     const { importingDocuments } = conversations[selectedId];
 
@@ -131,7 +132,7 @@ export const DocumentsTab: React.FC = () => {
                     type="file"
                     ref={documentFileRef}
                     style={{ display: 'none' }}
-                    accept=".txt,.pdf,.md,.jpg,.jpeg,.png,.tif,.tiff"
+                    accept={Constants.app.importTypes}
                     multiple={true}
                     onChange={() => {
                         void fileHandler.handleImport(selectedId, documentFileRef);
@@ -154,17 +155,17 @@ export const DocumentsTab: React.FC = () => {
                 <div className={classes.vectorDatabase}>
                     <Label size="large">Vector Database:</Label>
                     <RadioGroup
-                        defaultValue={serviceOptions.memoryStore.selectedType}
+                        defaultValue={serviceInfo.memoryStore.selectedType}
                         layout="horizontal"
                         disabled={conversations[selectedId].disabled}
                     >
-                        {serviceOptions.memoryStore.types.map((storeType) => {
+                        {serviceInfo.memoryStore.types.map((storeType) => {
                             return (
                                 <Radio
                                     key={storeType}
                                     value={storeType}
                                     label={storeType}
-                                    disabled={storeType !== serviceOptions.memoryStore.selectedType}
+                                    disabled={storeType !== serviceInfo.memoryStore.selectedType}
                                 />
                             );
                         })}

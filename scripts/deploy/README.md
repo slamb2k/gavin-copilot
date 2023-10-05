@@ -11,7 +11,7 @@ This document details how to deploy Chat Copilot's required resources to your Az
 
 - `F1` and `D1` SKUs for the App Service Plans are not currently supported for this deployment in order to support private networking.
 
-- Chat Copilot deployments use Azure Active Directory for authentication. All endpoints (except `/healthz`) require authentication to access.
+- Chat Copilot deployments use Azure Active Directory for authentication. All endpoints (except `/healthz` and `/authInfo`) require authentication to access.
 
 # Configure your environment
 
@@ -150,6 +150,31 @@ chmod +x ./deploy-webapi.sh
 ./deploy-webapi.sh --subscription {YOUR_SUBSCRIPTION_ID} --resource-group {YOUR_RESOURCE_GROUP_NAME} --deployment-name {YOUR_DEPLOYMENT_NAME}
 ```
 
+# Deploy Hosted Plugins
+
+> **_NOTE:_** This step can be skipped if the previous Azure Resources creation step succeeded without errors. The `deployWebSearcherPackage = true` setting in main.bicep ensures that the WebSearcher is deployed.
+> **_NOTE:_** More hosted plugins will be available.
+
+To deploy the plugins, build the packages first and deploy then to the Azure resources created above.
+
+## PowerShell
+
+```powershell
+./package-plugins.ps1
+
+./deploy-plugins.ps1 -Subscription {YOUR_SUBSCRIPTION_ID} -ResourceGroupName rg-{YOUR_DEPLOYMENT_NAME} -DeploymentName {YOUR_DEPLOYMENT_NAME}
+```
+
+## Bash
+
+```bash
+chmod +x ./package-plugins.sh
+./package-webapi.sh
+
+chmod +x ./deploy-plugins.sh
+./deploy-webapi.sh --subscription {YOUR_SUBSCRIPTION_ID} --resource-group rg-{YOUR_DEPLOYMENT_NAME} --deployment-name {YOUR_DEPLOYMENT_NAME}
+```
+
 # (Optional) Deploy Memory Pipeline
 
 > **_NOTE:_** This step can be skipped if the WebApi is not configured to run asynchronously for document processing. By default, the WebApi is configured to run asynchronously for document processing in deployment.
@@ -192,7 +217,7 @@ This will get you to the CORS page where you can add your allowed hosts.
 ```powershell
 $webApiName = $(az deployment group show --name {DEPLOYMENT_NAME} --resource-group {YOUR_RESOURCE_GROUP_NAME} --output json | ConvertFrom-Json).properties.outputs.webapiName.value
 
-($(az webapp config appsettings list --name $webapiName --resource-group {YOUR_RESOURCE_GROUP_NAME} | ConvertFrom-JSON) | Where-Object -Property name -EQ -Value Authorization:ApiKey).value
+az webapp cors add --name $webapiName --resource-group $ResourceGroupName --subscription $Subscription --allowed-origins YOUR_FRONTEND_URL
 ```
 
 ### Bash
@@ -200,5 +225,5 @@ $webApiName = $(az deployment group show --name {DEPLOYMENT_NAME} --resource-gro
 ```bash
 eval WEB_API_NAME=$(az deployment group show --name $DEPLOYMENT_NAME --resource-group $RESOURCE_GROUP --output json) | jq -r '.properties.outputs.webapiName.value'
 
-$(az webapp config appsettings list --name $WEB_API_NAME --resource-group {YOUR_RESOURCE_GROUP_NAME} | jq '.[] | select(.name=="Authorization:ApiKey").value')
+az webapp cors add --name $WEB_API_NAME --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTION --allowed-origins YOUR_FRONTEND_URL
 ```
