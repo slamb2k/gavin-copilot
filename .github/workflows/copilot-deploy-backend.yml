@@ -81,4 +81,4 @@ jobs:
 
       - name: "Deploy"
         run: |
-          scripts\deploy\deploy-webapi.ps1 -DeploymentName ${{inputs.DEPLOYMENT_NAME}} -Subscription ${{secrets.AZURE_SUBSCRIPTION_ID}} -ResourceGroupName ${{vars.CC_DEPLOYMENT_GROUP_NAME}} -EnsureUriInAppRegistration -RegisterPluginCors
+          scripts\deploy\deploy-webapi.ps1 -PackageFilePath "${{ github.workspace }}/${{inputs.ARTIFACT_NAME}}/webapi.zip" -DeploymentName ${{inputs.DEPLOYMENT_NAME}} -Subscription ${{secrets.AZURE_SUBSCRIPTION_ID}} -ResourceGroupName ${{vars.CC_DEPLOYMENT_GROUP_NAME}} -EnsureUriInAppRegistration -RegisterPluginCors
