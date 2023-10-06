@@ -36,7 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { dotnet: "6.0", configuration: Release, os: windows-latest }
+          - { dotnet: "6.0", configuration: Release, os: ubuntu-latest }
     # Map the job output to step output
     outputs:
       backend-host: ${{steps.app-name.outputs.backend-host}}
@@ -54,7 +54,7 @@ jobs:
           path: "${{ github.workspace }}/${{inputs.ARTIFACT_NAME}}"
 
       - name: "Display downloaded content"
-        run: dir -R
+        run: ls -R
         working-directory: "${{ github.workspace }}/${{inputs.ARTIFACT_NAME}}"
 
       - name: Azure login
@@ -69,8 +69,8 @@ jobs:
         id: app-name
         run: |
           $WEB_APP_NAME=$(az deployment group show --name ${{inputs.DEPLOYMENT_NAME}} --resource-group ${{vars.CC_DEPLOYMENT_GROUP_NAME}} --output json | ConvertFrom-JSON).properties.outputs.webapiName.value
-          Write-Output "AZURE_WEBAPP_NAME=$WEB_APP_NAME" >> $env:GITHUB_ENV
-          Write-Output "backend-host=$WEB_APP_NAME" >> $env:GITHUB_OUTPUT
+          echo "AZURE_WEBAPP_NAME=$WEB_APP_NAME" >> $GITHUB_ENV
+          echo "backend-host=$WEB_APP_NAME" >> $GITHUB_OUTPUT
 
       - name: Enable Run From Package
         uses: azure/CLI@v1
@@ -81,4 +81,4 @@ jobs:
 
       - name: "Deploy"
         run: |
-          scripts\deploy\deploy-webapi.ps1 -PackageFilePath "${{ github.workspace }}/${{inputs.ARTIFACT_NAME}}/webapi.zip" -DeploymentName ${{inputs.DEPLOYMENT_NAME}} -Subscription ${{secrets.AZURE_SUBSCRIPTION_ID}} -ResourceGroupName ${{vars.CC_DEPLOYMENT_GROUP_NAME}} -EnsureUriInAppRegistration -RegisterPluginCors
+          scripts/deploy/deploy-webapi.sh -p "${{ github.workspace }}/${{inputs.ARTIFACT_NAME}}/webapi.zip" -d ${{inputs.DEPLOYMENT_NAME}} -s ${{secrets.AZURE_SUBSCRIPTION_ID}} -rg ${{vars.CC_DEPLOYMENT_GROUP_NAME}} --register-app -register-cors
