@@ -87,11 +87,12 @@ az account set -s "$SUBSCRIPTION"
 
 echo "Getting Azure WebApp resource name..."
 DEPLOYMENT_JSON=$(az deployment group show --name $DEPLOYMENT_NAME --resource-group $RESOURCE_GROUP --output json)
-eval WEB_API_URL=$(echo $DEPLOYMENT_JSON | jq -r '.properties.outputs.webapiUrl.value')
+WEB_API_URL=$(echo $DEPLOYMENT_JSON | jq -r '.properties.outputs.webapiUrl.value')
 echo "WEB_API_URL: $WEB_API_URL"
-eval WEB_API_NAME=$(echo $DEPLOYMENT_JSON | jq -r '.properties.outputs.webapiName.value')
+WEB_API_NAME=$(echo $DEPLOYMENT_JSON | jq -r '.properties.outputs.webapiName.value')
 echo "WEB_API_NAME: $WEB_API_NAME"
-eval PLUGIN_NAMES=$(echo $DEPLOYMENT_JSON | jq -r '.properties.outputs.pluginNames.value')
+PLUGIN_NAMES=$(echo $DEPLOYMENT_JSON | jq -r '.properties.outputs.pluginNames.value')
+echo "PLUGIN_NAMES: $PLUGIN_NAMES"
 # Ensure $WEB_API_NAME is set
 if [[ -z "$WEB_API_NAME" ]]; then
     echo "Could not get Azure WebApp resource name from deployment output."
@@ -131,7 +132,7 @@ if [ -n "$DEPLOYMENT_SLOT" ]; then
         
         az webapp deployment slot create --slot=$DEPLOYMENT_SLOT --resource-group=$RESOURCE_GROUP --name $WEB_API_NAME
 
-        eval ORIGINS=$(az webapp deployment slot list --resource-group=$RESOURCE_GROUP --name $WEB_API_NAME | jq '.[].defaultHostName')
+        ORIGINS=$(az webapp deployment slot list --resource-group=$RESOURCE_GROUP --name $WEB_API_NAME | jq '.[].defaultHostName')
     fi
 fi
 
@@ -144,9 +145,9 @@ fi
 
 if [[ -n $REGISTER_APP ]]; then
     WEBAPI_SETTINGS=$(az webapp config appsettings list --name $WEB_API_NAME --resource-group $RESOURCE_GROUP --output json)
-    eval FRONTEND_CLIENT_ID=$(echo $WEBAPI_SETTINGS | jq -r '.[] | select(.name == "Frontend:AadClientId") | .value')
-    eval OBJECT_ID=$(az ad app show --id $FRONTEND_CLIENT_ID | jq -r '.id')
-    eval REDIRECT_URIS=$(az rest --method GET --uri "https://graph.microsoft.com/v1.0/applications/$OBJECT_ID" --headers 'Content-Type=application/json' | jq -r '.spa.redirectUris')
+    FRONTEND_CLIENT_ID=$(echo $WEBAPI_SETTINGS | jq -r '.[] | select(.name == "Frontend:AadClientId") | .value')
+    OBJECT_ID=$(az ad app show --id $FRONTEND_CLIENT_ID | jq -r '.id')
+    REDIRECT_URIS=$(az rest --method GET --uri "https://graph.microsoft.com/v1.0/applications/$OBJECT_ID" --headers 'Content-Type=application/json' | jq -r '.spa.redirectUris')
     NEED_TO_UPDATE_REG=false
 
     for ADDRESS in $(echo "$ORIGINS"); do
@@ -179,7 +180,7 @@ fi
 
 if [[ -n $REGISTER_CORS ]]; then
     for PLUGIN_NAME in $PLUGIN_NAMES; do
-        eval ALLOWED_ORIGINS=$(az webapp cors show --name $PLUGIN_NAME --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTION | jq -r '.allowedOrigins[]')
+        ALLOWED_ORIGINS=$(az webapp cors show --name $PLUGIN_NAME --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTION | jq -r '.allowedOrigins[]')
         for ADDRESS in $(echo "$ORIGINS"); do
             ORIGIN="https://$ADDRESS"
             echo "Ensuring '$ORIGIN' is included in CORS origins for plugin '$PLUGIN_NAME'..."
