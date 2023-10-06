@@ -43,6 +43,11 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts
+
       - uses: actions/download-artifact@v3
         with:
           name: ${{inputs.ARTIFACT_NAME}}
