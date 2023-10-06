@@ -178,7 +178,7 @@ if [[ -n $REGISTER_APP ]]; then
 
         if [ $? -ne 0 ]; then
             echo "Failed to update app registration $OBJECT_ID with redirect URIs"
-            #exit 1
+            exit 1
         fi
     fi
 fi
@@ -193,7 +193,7 @@ if [[ -n $REGISTER_CORS ]]; then
                 az webapp cors add --name $PLUGIN_NAME --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTION --allowed-origins "$ORIGIN"
                 if [ $? -ne 0 ]; then
                     echo "Failed to update CORS origins with $ORIGIN"
-                    #exit 1
+                    exit 1
                 fi
             fi 
         done 
