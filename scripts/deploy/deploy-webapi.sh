@@ -2,8 +2,6 @@
 
 # Deploy Chat Copilot application to Azure
 
-set -e
-
 usage() {
     echo "Usage: $0 -d DEPLOYMENT_NAME -s SUBSCRIPTION -rg RESOURCE_GROUP [OPTIONS]"
     echo ""
@@ -164,6 +162,7 @@ if [[ -n $REGISTER_APP ]]; then
         BODY="{spa:{redirectUris:['$(echo "$REDIRECT_URIS")']}}"
         BODY="${BODY//\,/\'\',\'}"
 
+        echo "Updating redirects with $BODY"
 
         az rest \
             --method PATCH \
@@ -172,8 +171,8 @@ if [[ -n $REGISTER_APP ]]; then
             --body $BODY
 
         if [ $? -ne 0 ]; then
-            echo "Failed to update app registration"
-            exit 1
+            echo "Failed to update app registration $OBJECT_ID with redirect URIs"
+            #exit 1
         fi
     fi
 fi
@@ -186,6 +185,10 @@ if [[ -n $REGISTER_CORS ]]; then
             echo "Ensuring '$ORIGIN' is included in CORS origins for plugin '$PLUGIN_NAME'..."
             if [[ ! "$ALLOWED_ORIGINS" =~ "$ORIGIN" ]]; then
                 az webapp cors add --name $PLUGIN_NAME --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTION --allowed-origins "$ORIGIN"
+                if [ $? -ne 0 ]; then
+                    echo "Failed to update CORS origins with $ORIGIN"
+                    #exit 1
+                fi
             fi 
         done 
     done 
