@@ -36,7 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { dotnet: "6.0", configuration: Release, os: ubuntu-latest }
+          - { dotnet: "6.0", configuration: Release, os: windows-latest }
     # Map the job output to step output
     outputs:
       backend-host: ${{steps.app-name.outputs.backend-host}}
@@ -49,7 +49,7 @@ jobs:
           path: "${{ github.workspace }}/${{inputs.ARTIFACT_NAME}}"
 
       - name: "Display downloaded content"
-        run: ls -R
+        run: dir -R
         working-directory: "${{ github.workspace }}/${{inputs.ARTIFACT_NAME}}"
 
       - name: Azure login
@@ -63,9 +63,9 @@ jobs:
       - name: Get app name
         id: app-name
         run: |
-          WEB_APP_NAME=$(az deployment group show --name ${{inputs.DEPLOYMENT_NAME}} --resource-group ${{vars.CC_DEPLOYMENT_GROUP_NAME}} --output json | jq -r '.properties.outputs.webapiName.value')
-          echo "AZURE_WEBAPP_NAME=$WEB_APP_NAME" >> $GITHUB_ENV
-          echo "backend-host=$WEB_APP_NAME" >> $GITHUB_OUTPUT
+          $WEB_APP_NAME=$(az deployment group show --name ${{inputs.DEPLOYMENT_NAME}} --resource-group ${{vars.CC_DEPLOYMENT_GROUP_NAME}} --output json | ConvertFrom-JSON).properties.outputs.webapiName.value
+          Write-Output "AZURE_WEBAPP_NAME=$WEB_APP_NAME" >> $env:GITHUB_ENV
+          Write-Output "backend-host=$WEB_APP_NAME" >> $env:GITHUB_OUTPUT
 
       - name: Enable Run From Package
         uses: azure/CLI@v1
@@ -75,7 +75,5 @@ jobs:
             az webapp config appsettings set --resource-group ${{vars.CC_DEPLOYMENT_GROUP_NAME}} --name ${{ env.AZURE_WEBAPP_NAME }} --settings WEBSITE_RUN_FROM_PACKAGE="1" -o none
 
       - name: "Deploy"
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          package: "${{ github.workspace }}/${{inputs.ARTIFACT_NAME}}/webapi.zip"
+        run: |
+          scripts\deploy\deploy-webapi.ps1 -DeploymentName ${{inputs.DEPLOYMENT_NAME}} -Subscription ${{secrets.AZURE_SUBSCRIPTION_ID}} -ResourceGroupName ${{vars.CC_DEPLOYMENT_GROUP_NAME}} -EnsureUriInAppRegistration -RegisterPluginCors
