@@ -23,11 +23,11 @@ jobs:
   build-plugins:
     uses: ./.github/workflows/copilot-build-plugins.yml
 
-  int:
+  integration:
     needs: [build-webapi, build-memorypipeline, build-plugins]
     uses: ./.github/workflows/copilot-deploy-environment.yml
     with:
-      ENVIRONMENT: int
+      ENVIRONMENT: integration
       WEBAPI_ARTIFACT_NAME: ${{needs.build-webapi.outputs.artifact}}
       MEMORYPIPELINE_ARTIFACT_NAME: ${{needs.build-memorypipeline.outputs.artifact}}
       PLUGINS_ARTIFACT_NAME: ${{needs.build-plugins.outputs.artifact}}
@@ -37,18 +37,18 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{secrets.AZURE_SUBSCRIPTION_ID}}
       AZURE_OPENAI_ENDPOINT: ${{secrets.AZURE_OPENAI_ENDPOINT}}
 
-  int-tests:
+  integration-tests:
     uses: ./.github/workflows/copilot-run-integration-tests.yml
-    needs: int
+    needs: integration
     with:
-      ENVIRONMENT: int
+      ENVIRONMENT: integration
       BACKEND_HOST: ${{needs.int.outputs.backend-host}}
 
-  stable:
-    needs: int-tests
+  production:
+    needs: integration-tests
     uses: ./.github/workflows/copilot-deploy-environment.yml
     with:
-      ENVIRONMENT: stable
+      ENVIRONMENT: production
       WEBAPI_ARTIFACT_NAME: ${{needs.build-webapi.outputs.artifact}}
       MEMORYPIPELINE_ARTIFACT_NAME: ${{needs.build-memorypipeline.outputs.artifact}}
       PLUGINS_ARTIFACT_NAME: ${{needs.build-plugins.outputs.artifact}}
