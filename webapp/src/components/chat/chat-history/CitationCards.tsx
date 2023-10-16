@@ -5,14 +5,15 @@ import {
     Button,
     Caption1,
     Card,
+    CardFooter,
     CardHeader,
+    Text,
     makeStyles,
-    shorthands,
-    Text
+    shorthands
 } from '@fluentui/react-components';
 import { ArrowDownload24Regular, FolderOpenRegular } from '@fluentui/react-icons';
 import React, { useState } from 'react';
-import { useChat } from '../../../libs/hooks';
+import { useFile } from '../../../libs/hooks';
 import { Citation, IChatMessage } from '../../../libs/models/ChatMessage';
 import { customTokens } from '../../../styles';
 
@@ -35,7 +36,7 @@ interface ICitationCardsProps {
 
 export const CitationCards: React.FC<ICitationCardsProps> = ({ message }) => {
     const classes = useClasses();
-    const chat = useChat();
+    const file = useFile();
 
     const [showSnippetStates, setShowSnippetStates] = useState<boolean[]>([]);
     React.useEffect(() => {
@@ -60,18 +61,18 @@ export const CitationCards: React.FC<ICitationCardsProps> = ({ message }) => {
         setShowSnippetStates(newShowSnippetStates);
     };
 
-    const showSnippet = (index: number) => {
-        const newShowSnippetStates = [...showSnippetStates];
-        newShowSnippetStates[index] = !newShowSnippetStates[index];
-        setShowSnippetStates(newShowSnippetStates);
-    };
+    // const showSnippet = (index: number) => {
+    //     const newShowSnippetStates = [...showSnippetStates];
+    //     newShowSnippetStates[index] = !newShowSnippetStates[index];
+    //     setShowSnippetStates(newShowSnippetStates);
+    // };
 
     const onDownloadCitedDocument = (citation : Citation) => {
-        void chat.downloadCitedDocument(citation, false);
+        void file.downloadCitedDocument(citation, false);
     };
 
     const onOpenCitedDocument = (citation : Citation) => {
-        void chat.downloadCitedDocument(citation, true);
+        void file.downloadCitedDocument(citation, true);
     };  
 
     return (

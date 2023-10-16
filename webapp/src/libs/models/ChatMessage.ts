@@ -49,6 +49,7 @@ export interface Citation {
     sourceName: string;
     snippet: string;
     relevanceScore: number;
+    sourceContentType: string;
 }
 
 export interface IChatMessage {

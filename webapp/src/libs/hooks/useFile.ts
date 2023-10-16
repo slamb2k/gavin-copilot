@@ -1,11 +1,14 @@
 // Copyright (c) Microsoft. All rights reserved.
 
 import { useMsal } from '@azure/msal-react';
+import { getErrorDetails } from '../../components/utils/TextUtils';
 import { useAppDispatch } from '../../redux/app/hooks';
 import { FeatureKeys } from '../../redux/features/app/AppState';
-import { toggleFeatureState } from '../../redux/features/app/appSlice';
+import { addAlert, toggleFeatureState } from '../../redux/features/app/appSlice';
 import { setImportingDocumentsToConversation } from '../../redux/features/conversations/conversationsSlice';
 import { AuthHelper } from '../auth/AuthHelper';
+import { AlertType } from '../models/AlertType';
+import { Citation } from '../models/ChatMessage';
 import { DocumentImportService, DocumentScopes } from '../services/DocumentImportService';
 import { useChat } from './useChat';
 
@@ -102,10 +105,20 @@ export const useFile = () => {
         }
     };
 
+    const downloadCitedDocument = async (citation : Citation, openFile : boolean) => {
+        try {
+            await documentImportService.downloadCitedDocument(citation, openFile, await AuthHelper.getSKaaSAccessToken(instance, inProgress));
+        } catch (e: any) {
+            const errorMessage = `Unabled to download cited document. Details: ${getErrorDetails(e)}`;
+            dispatch(addAlert({ message: errorMessage, type: AlertType.Error }));
+        }
+    };    
+
     return {
         loadFile,
         downloadFile,
         handleImport,
         getContentSafetyStatus,
+        downloadCitedDocument,
     };
 };

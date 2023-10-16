@@ -92,7 +92,6 @@ export const ChatListItem: FC<IChatListItemProps> = ({
     header,
     timestamp,
     preview,
-    botProfilePicture,
     isSelected,
 }) => {
     const classes = useClasses();
