@@ -44,7 +44,7 @@ export const UserFeedbackActions: React.FC<IUserFeedbackProps> = ({ messageIndex
             <Text color="gray" size={200}>
                 AI-generated content may be incorrect
             </Text>
-            <Tooltip content={'Like bot message'} relationship="label">
+            <Tooltip content={'Like answer'} relationship="label">
                 <Button
                     icon={<ThumbLike16 />}
                     appearance="transparent"
@@ -54,7 +54,7 @@ export const UserFeedbackActions: React.FC<IUserFeedbackProps> = ({ messageIndex
                     }}
                 />
             </Tooltip>
-            <Tooltip content={'Dislike bot message'} relationship="label">
+            <Tooltip content={'Dislike answer'} relationship="label">
                 <Button
                     icon={<ThumbDislike16 />}
                     appearance="transparent"
