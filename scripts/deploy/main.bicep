@@ -6,10 +6,10 @@ Bicep template for deploying CopilotChat Azure resources.
 */
 
 @description('Name for the deployment consisting of alphanumeric characters or dashes (\'-\')')
-param name string = 'copichat'
+param name string = 'gavin'
 
 @description('SKU for the Azure App Service plan')
-@allowed([ 'B1', 'S1', 'S2', 'S3', 'P1V3', 'P2V3', 'I1V2', 'I2V2' ])
+@allowed([ 'B1', 'S1', 'S2', 'S3', 'P1V3', 'P2V3', 'I1V2', 'I2V2', 'P2MV2', 'P2MV3' ])
 param webAppServiceSku string = 'B1'
 
 @description('Location of package to deploy as the web service')
@@ -88,6 +88,25 @@ param deployWebSearcherPackage bool = true
 
 @description('Region for the resources')
 param location string = resourceGroup().location
+
+@description('Host or subdomain for the backend webapi')
+param webapiCustomHost string = ''
+
+@description('Host or subdomain for the memory pipeline')
+param memoryPipelineCustomHost string = ''
+
+@description('The name of the DNS zone (e.g. example.com)')
+param dnsZoneName string = ''
+
+@description('The custom fqdn of the backend webapi (e.g. <custom_host_name>.<dns zone>). Empty if no custom host is specified.')
+var webapiCustomUrl = (webapiCustomHost != '' && dnsZoneName != '') 
+ ? '${webapiCustomHost}.${dnsZoneName}' 
+ : ''
+
+@description('The custom fqdn of the memory pipeline (e.g. <custom_host_name>.<dns zone>). Empty if no custom host is specified.')
+var memoryPipelineCustomUrl = (memoryPipelineCustomHost != '' && dnsZoneName != '') 
+ ? '${memoryPipelineCustomHost}.${dnsZoneName}' 
+ : ''
 
 @description('Hash of the resource group ID')
 var rgIdHash = uniqueString(resourceGroup().id)
@@ -171,6 +190,41 @@ resource appServiceWeb 'Microsoft.Web/sites@2022-09-01' = {
   }
 }
 
+module appServiceWebDnsModule 'modules/verifyAzureDns.bicep' = if (webapiCustomUrl != '') {
+  name: 'app-${deployment().name}-webapi-dns-verify'
+  scope: resourceGroup('rg-shared')
+  params: {
+    cnameRecord: webapiCustomHost
+    dnsZoneName: dnsZoneName
+    targetHostname: appServiceWeb.properties.defaultHostName
+    validationToken: appServiceWeb.properties.customDomainVerificationId
+  }
+}
+
+// hostname bindings must be deployed one by one to prevent Conflict (HTTP 429) errors.
+resource appServiceWebHostname 'Microsoft.web/sites/hostnameBindings@2019-08-01' = if (!empty(webapiCustomUrl)) {
+  name: !empty(webapiCustomUrl) ? webapiCustomUrl : 'api.domain.com'
+  properties: {
+    siteName: appServiceWeb.name
+    hostNameType: 'Verified'
+    sslState: 'Disabled'
+  }
+  parent: appServiceWeb
+  dependsOn: [ appServiceWebDnsModule ]
+}
+
+// certificates must be bound via module/nested template, because each resource can only occur once in every template
+// in this case the hostnameBindings would occur twice otherwise.
+module appServiceWebHostnameCertBindings 'modules/bindCertificateToHostname.bicep' = if (webapiCustomUrl != '') {
+  name: 'app-${deployment().name}-webapi-ssl'
+  params: {
+    appServicePlanResourceId: appServicePlan.id
+    customHostnames: [ webapiCustomUrl ]
+    location: location
+    webAppName: appServiceWeb.name
+  }
+  dependsOn: [ appServiceWebHostname ]
+}
 resource appServiceWebConfig 'Microsoft.Web/sites/config@2022-09-01' = {
   parent: appServiceWeb
   name: 'web'
@@ -360,7 +414,7 @@ resource appServiceWebConfig 'Microsoft.Web/sites/config@2022-09-01' = {
       }
       {
         name: 'SemanticMemory:Services:AzureBlobs:Container'
-        value: 'chatmemory'
+        value: 'memorypipeline'
       }
       {
         name: 'SemanticMemory:Services:AzureQueue:Auth'
@@ -465,6 +519,42 @@ resource appServiceMemoryPipeline 'Microsoft.Web/sites@2022-09-01' = {
   }
 }
 
+module appServiceMemoryPipelineDnsModule 'modules/verifyAzureDns.bicep' = if (memoryPipelineCustomUrl != '') {
+  name: 'app-${deployment().name}-memorypipeline-dns-verify'
+  scope: resourceGroup('rg-shared')
+  params: {
+    cnameRecord: memoryPipelineCustomHost
+    dnsZoneName: dnsZoneName
+    targetHostname: appServiceMemoryPipeline.properties.defaultHostName
+    validationToken: appServiceMemoryPipeline.properties.customDomainVerificationId
+  }
+}
+
+// hostname bindings must be deployed one by one to prevent Conflict (HTTP 429) errors.
+resource appServiceMemoryPipelineHostname 'Microsoft.web/sites/hostnameBindings@2019-08-01' = if (!empty(memoryPipelineCustomUrl)) {
+  name: !empty(memoryPipelineCustomUrl) ? memoryPipelineCustomUrl : 'memorypipeline.domain.com'
+  properties: {
+    siteName: appServiceMemoryPipeline.name
+    hostNameType: 'Verified'
+    sslState: 'Disabled'
+  }
+  parent: appServiceMemoryPipeline
+  dependsOn: [ appServiceMemoryPipelineDnsModule ]
+}
+
+// certificates must be bound via module/nested template, because each resource can only occur once in every template
+// in this case the hostnameBindings would occur twice otherwise.
+module appServiceMemoryPipelineHostnameCertBindings 'modules/bindCertificateToHostname.bicep' = if (memoryPipelineCustomUrl != '') {
+  name: 'app-${deployment().name}-memorypipeline-ssl'
+  params: {
+    appServicePlanResourceId: appServicePlan.id
+    customHostnames: [ memoryPipelineCustomUrl ]
+    location: location
+    webAppName: appServiceMemoryPipeline.name
+  }
+  dependsOn: [ appServiceMemoryPipelineHostname ]
+}
+
 resource appServiceMemoryPipelineConfig 'Microsoft.Web/sites/config@2022-09-01' = {
   parent: appServiceMemoryPipeline
   name: 'web'
@@ -521,7 +611,7 @@ resource appServiceMemoryPipelineConfig 'Microsoft.Web/sites/config@2022-09-01' 
       }
       {
         name: 'SemanticMemory:Services:AzureBlobs:Container'
-        value: 'chatmemory'
+        value: 'memorypipeline'
       }
       {
         name: 'SemanticMemory:Services:AzureQueue:Auth'
@@ -1226,7 +1316,7 @@ resource bingSearchService 'Microsoft.Bing/accounts@2020-06-10' = {
   kind: 'Bing.Search.v7'
 }
 
-output webapiUrl string = appServiceWeb.properties.defaultHostName
+output webapiUrl string = (webapiCustomUrl != '') ? webapiCustomUrl : appServiceWeb.properties.defaultHostName
 output webapiName string = appServiceWeb.name
 output memoryPipelineName string = appServiceMemoryPipeline.name
 output pluginNames array = [
