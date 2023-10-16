@@ -2,17 +2,18 @@
 
 import {
     Badge,
+    Button,
     Caption1,
     Card,
     CardHeader,
     makeStyles,
     shorthands,
-    Text,
-    ToggleButton,
+    Text
 } from '@fluentui/react-components';
-import { ChevronDown20Regular, ChevronUp20Regular } from '@fluentui/react-icons';
+import { ArrowDownload24Regular, FolderOpenRegular } from '@fluentui/react-icons';
 import React, { useState } from 'react';
-import { IChatMessage } from '../../../libs/models/ChatMessage';
+import { useChat } from '../../../libs/hooks';
+import { Citation, IChatMessage } from '../../../libs/models/ChatMessage';
 import { customTokens } from '../../../styles';
 
 const useClasses = makeStyles({
@@ -34,6 +35,7 @@ interface ICitationCardsProps {
 
 export const CitationCards: React.FC<ICitationCardsProps> = ({ message }) => {
     const classes = useClasses();
+    const chat = useChat();
 
     const [showSnippetStates, setShowSnippetStates] = useState<boolean[]>([]);
     React.useEffect(() => {
@@ -64,31 +66,44 @@ export const CitationCards: React.FC<ICitationCardsProps> = ({ message }) => {
         setShowSnippetStates(newShowSnippetStates);
     };
 
+    const onDownloadCitedDocument = (citation : Citation) => {
+        void chat.downloadCitedDocument(citation, false);
+    };
+
+    const onOpenCitedDocument = (citation : Citation) => {
+        void chat.downloadCitedDocument(citation, true);
+    };  
+
     return (
         <div className={classes.root}>
             {message.citations.map((citation, index) => {
                 return (
-                    <Card className={classes.card} size="small" key={`citation-card-${index}`}>
+                    <Card className={classes.card} key={`citation-card-${index}`}>
                         <CardHeader
                             image={
-                                <Badge shape="rounded" appearance="outline" color="informative">
-                                    {index + 1}
-                                </Badge>
+                            <Badge
+                                shape="circular"
+                                appearance="filled"
+                                color="brand"
+                                size="extra-large"
+                            >
+                                {index + 1}
+                            </Badge>
                             }
                             header={<Text weight="semibold">{citation.sourceName}</Text>}
                             description={<Caption1>Relevance score: {citation.relevanceScore.toFixed(3)}</Caption1>}
-                            action={
-                                <ToggleButton
-                                    appearance="transparent"
-                                    icon={showSnippetStates[index] ? <ChevronUp20Regular /> : <ChevronDown20Regular />}
-                                    onClick={() => {
-                                        showSnippet(index);
-                                    }}
-                                />
-                            }
                         />
 
-                        {showSnippetStates[index] && <p>{citation.snippet}</p>}
+                        <CardFooter>
+                            <Button
+                                icon={<FolderOpenRegular />}
+                                onClick={() => { onOpenCitedDocument(citation) }}
+                            >Open</Button>
+                            <Button
+                                icon={<ArrowDownload24Regular />}
+                                onClick={() => { onDownloadCitedDocument(citation) }}
+                            >Download</Button>                            
+                        </CardFooter>
                     </Card>
                 );
             })}

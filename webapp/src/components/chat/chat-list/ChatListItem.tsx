@@ -117,7 +117,10 @@ export const ChatListItem: FC<IChatListItemProps> = ({
             aria-label={`Chat list item: ${header}`}
         >
             <Persona
-                avatar={{ image: { src: botProfilePicture } }}
+                avatar={{
+                    name: 'Copilot Chat',
+                    color: 'colorful'
+                }}
                 presence={!features[FeatureKeys.SimplifiedExperience].enabled ? { status: 'available' } : undefined}
             />
             {editingTitle ? (

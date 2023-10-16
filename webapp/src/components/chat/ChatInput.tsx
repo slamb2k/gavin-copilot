@@ -13,6 +13,7 @@ import { useFile } from '../../libs/hooks';
 import { GetResponseOptions } from '../../libs/hooks/useChat';
 import { AlertType } from '../../libs/models/AlertType';
 import { ChatMessageType } from '../../libs/models/ChatMessage';
+import { DocumentScopes } from '../../libs/services/DocumentImportService';
 import { useAppDispatch, useAppSelector } from '../../redux/app/hooks';
 import { RootState } from '../../redux/app/store';
 import { addAlert } from '../../redux/features/app/appSlice';
@@ -156,7 +157,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ isDraggingOver, onDragLeav
 
     const handleDrop = (e: React.DragEvent<HTMLTextAreaElement>) => {
         onDragLeave(e);
-        void fileHandler.handleImport(selectedId, documentFileRef, undefined, e.dataTransfer.files);
+        void fileHandler.handleImport(selectedId, DocumentScopes.Chat, documentFileRef, undefined, e.dataTransfer.files);
     };
 
     return (
@@ -228,7 +229,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ isDraggingOver, onDragLeav
                         accept={Constants.app.importTypes}
                         multiple={true}
                         onChange={() => {
-                            void fileHandler.handleImport(selectedId, documentFileRef);
+                            void fileHandler.handleImport(selectedId, DocumentScopes.Chat, documentFileRef);
                         }}
                     />
                     <Button

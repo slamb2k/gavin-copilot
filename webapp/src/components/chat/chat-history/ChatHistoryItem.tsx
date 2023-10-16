@@ -114,9 +114,13 @@ export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = ({ message, messa
         : chat.getChatUserById(message.userName, selectedId, conversations[selectedId].users);
     const fullName = user?.fullName ?? message.userName;
 
-    const avatar: AvatarProps = isBot
-        ? { image: { src: conversations[selectedId].botProfilePicture } }
-        : isDefaultUser
+    // const avatar: AvatarProps = isBot
+    //     ? { image: { src: conversations[selectedId].botProfilePicture } }
+    //     : isDefaultUser
+    //     ? { idForColor: selectedId, color: 'colorful' }
+    //     : { name: fullName, color: 'colorful' };
+
+    const avatar: AvatarProps = isDefaultUser
         ? { idForColor: selectedId, color: 'colorful' }
         : { name: fullName, color: 'colorful' };
 

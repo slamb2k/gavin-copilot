@@ -6,7 +6,7 @@ import { FeatureKeys } from '../../redux/features/app/AppState';
 import { toggleFeatureState } from '../../redux/features/app/appSlice';
 import { setImportingDocumentsToConversation } from '../../redux/features/conversations/conversationsSlice';
 import { AuthHelper } from '../auth/AuthHelper';
-import { DocumentImportService } from '../services/DocumentImportService';
+import { DocumentImportService, DocumentScopes } from '../services/DocumentImportService';
 import { useChat } from './useChat';
 
 export const useFile = () => {
@@ -50,6 +50,7 @@ export const useFile = () => {
 
     const handleImport = async (
         chatId: string,
+        scope: DocumentScopes,
         documentFileRef: React.MutableRefObject<HTMLInputElement | null>,
         file?: File,
         dragAndDropFiles?: FileList,
@@ -67,7 +68,7 @@ export const useFile = () => {
             );
 
             if (filesArray.length > 0) {
-                await chat.importDocument(chatId, filesArray);
+                await chat.importDocument(chatId, scope, filesArray);
             }
 
             dispatch(

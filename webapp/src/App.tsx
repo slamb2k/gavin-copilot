@@ -1,21 +1,24 @@
 // Copyright (c) Microsoft. All rights reserved.
 
 import { AuthenticatedTemplate, UnauthenticatedTemplate, useIsAuthenticated, useMsal } from '@azure/msal-react';
-import { FluentProvider, Subtitle1, makeStyles, shorthands, tokens } from '@fluentui/react-components';
+import { FluentProvider, Image, makeStyles, shorthands, tokens } from '@fluentui/react-components';
 
 import * as React from 'react';
 import { useEffect } from 'react';
+import { LogoSection } from './components/header/LogoSection';
 import { UserSettingsMenu } from './components/header/UserSettingsMenu';
 import { PluginGallery } from './components/open-api-plugins/PluginGallery';
 import { BackendProbe, ChatView, Error, Loading, Login } from './components/views';
 import { AuthHelper } from './libs/auth/AuthHelper';
 import { useChat, useFile } from './libs/hooks';
-import { AlertType } from './libs/models/AlertType';
 import { useAppDispatch, useAppSelector } from './redux/app/hooks';
 import { RootState } from './redux/app/store';
 import { FeatureKeys } from './redux/features/app/AppState';
-import { addAlert, setActiveUserInfo, setServiceInfo } from './redux/features/app/appSlice';
+import { setActiveUserInfo, setServiceInfo } from './redux/features/app/appSlice';
 import { semanticKernelDarkTheme, semanticKernelLightTheme } from './styles';
+
+import headerBackground from './assets/header-background.png';
+import msOpenAILogo from './assets/ms-openai-logo.png';
 
 export const useClasses = makeStyles({
     container: {
@@ -26,25 +29,44 @@ export const useClasses = makeStyles({
         ...shorthands.overflow('hidden'),
     },
     header: {
-        alignItems: 'center',
-        backgroundColor: tokens.colorBrandForeground2,
-        color: tokens.colorNeutralForegroundOnBrand,
         display: 'flex',
-        '& h1': {
-            paddingLeft: tokens.spacingHorizontalXL,
-            display: 'flex',
-        },
-        height: '48px',
-        justifyContent: 'space-between',
-        width: '100%',
+        flexDirection: 'row',
+        justifyContent: 'space-between',  
+        backgroundImage: `url(${headerBackground})`,
+        height: '15vh'        
     },
-    persona: {
-        marginRight: tokens.spacingHorizontalXXL,
-    },
-    cornerItems: {
+    headerLeft: {
         display: 'flex',
-        ...shorthands.gap(tokens.spacingHorizontalS),
     },
+    headerRight: {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',  
+        paddingRight: '30px',
+        paddingTop: '20px',
+        paddingBottom: '20px',
+        ...shorthands.gap(tokens.spacingVerticalXL),
+    },
+    headerCustomerLogo: {
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        objectFit: 'scale-down',
+        height: '30%',
+    },
+    headerToolbar: {
+        display: 'flex',
+        flexDirection: 'row',
+        marginLeft: 'auto',
+        paddingRight: '0px',
+    },    
+    headerToolbarItem: {
+        opacity: '0.7', 
+        '&:hover': {
+            cursor: 'pointer',
+            opacity: '1.0'
+        }
+    },       
 });
 
 enum AppState {
@@ -90,15 +112,15 @@ const App = () => {
                 );
 
                 // Privacy disclaimer for internal Microsoft users
-                if (account.username.split('@')[1] === 'microsoft.com') {
-                    dispatch(
-                        addAlert({
-                            message:
-                                'By using Chat Copilot, you agree to protect sensitive data, not store it in chat, and allow chat history collection for service improvements. This tool is for internal use only.',
-                            type: AlertType.Info,
-                        }),
-                    );
-                }
+                // if (account.username.split('@')[1] === 'microsoft.com') {
+                //     dispatch(
+                //         addAlert({
+                //             message:
+                //                 'By using Chat Copilot, you agree to protect sensitive data, not store it in chat, and allow chat history collection for service improvements. This tool is for internal use only.',
+                //             type: AlertType.Info,
+                //         }),
+                //     );
+                // }
 
                 setAppState(AppState.LoadingChats);
             }
@@ -140,9 +162,26 @@ const App = () => {
             {AuthHelper.isAuthAAD() ? (
                 <>
                     <UnauthenticatedTemplate>
-                        <div className={classes.container}>
+                        <div className={classes.container}>                    
                             <div className={classes.header}>
-                                <Subtitle1 as="h1">Chat Copilot</Subtitle1>
+                                <div className={classes.headerLeft}>
+                                    <LogoSection />
+                                </div>
+                                <div className={classes.headerRight}>
+                                    <div className={classes.headerCustomerLogo}>
+                                        <Image src={msOpenAILogo} /> 
+                                    </div>
+                                    <div className={classes.headerToolbar}>
+                                        <div className={classes.headerToolbarItem}>
+                                            <PluginGallery />
+                                        </div>
+                                        <div className={classes.headerToolbarItem}>
+                                            <UserSettingsMenu setLoadingState={() => {setAppState(AppState.SigningOut);
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>                                
                             </div>
                             {appState === AppState.SigningOut && <Loading text="Signing you out..." />}
                             {appState !== AppState.SigningOut && <Login />}
@@ -178,16 +217,25 @@ const Chat = ({
     return (
         <div className={classes.container}>
             <div className={classes.header}>
-                <Subtitle1 as="h1">Chat Copilot</Subtitle1>
+                <div className={classes.headerLeft}>
+                    <LogoSection />
+                </div>
                 {appState > AppState.SettingUserInfo && (
-                    <div className={classes.cornerItems}>
-                        <div className={classes.cornerItems}>
+                <div className={classes.headerRight}>
+                    <div className={classes.headerCustomerLogo}>
+                        <Image src={msOpenAILogo} /> 
+                    </div>
+                    <div className={classes.headerToolbar}>
+                        <div className={classes.headerToolbarItem}>
                             <PluginGallery />
+                        </div>
+                        <div className={classes.headerToolbarItem}>
                             <UserSettingsMenu
                                 setLoadingState={() => {
                                     setAppState(AppState.SigningOut);
                                 }}
                             />
+                            </div>
                         </div>
                     </div>
                 )}

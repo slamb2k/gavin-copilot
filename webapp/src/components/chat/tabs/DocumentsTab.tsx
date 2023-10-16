@@ -27,15 +27,17 @@ import {
 } from '@fluentui/react-components';
 import {
     DocumentArrowUp20Regular,
+    DocumentDatabaseRegular,
     DocumentPdfRegular,
     DocumentTextRegular,
     FluentIconsProps,
 } from '@fluentui/react-icons';
 import * as React from 'react';
 import { useRef } from 'react';
+import { Constants } from '../../../Constants';
 import { useChat, useFile } from '../../../libs/hooks';
 import { ChatMemorySource } from '../../../libs/models/ChatMemorySource';
-import { Constants } from '../../../Constants';
+import { DocumentScopes } from '../../../libs/services/DocumentImportService';
 import { useAppSelector } from '../../../redux/app/hooks';
 import { RootState } from '../../../redux/app/store';
 import { timestampToDateString } from '../../utils/TextUtils';
@@ -92,6 +94,7 @@ export const DocumentsTab: React.FC = () => {
     const { importingDocuments } = conversations[selectedId];
 
     const [resources, setResources] = React.useState<ChatMemorySource[]>([]);
+    const [importScope, setImportScope] = React.useState<DocumentScopes>(DocumentScopes.Global);
     const documentFileRef = useRef<HTMLInputElement | null>(null);
 
     React.useEffect(() => {
@@ -135,7 +138,7 @@ export const DocumentsTab: React.FC = () => {
                     accept={Constants.app.importTypes}
                     multiple={true}
                     onChange={() => {
-                        void fileHandler.handleImport(selectedId, documentFileRef);
+                        void fileHandler.handleImport(selectedId, importScope, documentFileRef);
                     }}
                 />
                 <Tooltip content="Embed file into chat session" relationship="label">
@@ -145,11 +148,31 @@ export const DocumentsTab: React.FC = () => {
                         disabled={
                             conversations[selectedId].disabled || (importingDocuments && importingDocuments.length > 0)
                         }
-                        onClick={() => documentFileRef.current?.click()}
+                        onClick={() => {
+                                setImportScope(DocumentScopes.Chat);
+                                documentFileRef.current?.click();
+                            }
+                        }
                     >
-                        Upload
+                        Upload to Chat
                     </Button>
-                </Tooltip>
+                </Tooltip>                
+                <Tooltip content="Upload file to global document store" relationship="label">
+                    <Button
+                        className={classes.uploadButton}
+                        icon={<DocumentDatabaseRegular />}
+                        disabled={
+                            (conversations[selectedId].disabled || (importingDocuments && importingDocuments.length > 0))
+                        }
+                        onClick={() => {
+                                setImportScope(DocumentScopes.Global);
+                                documentFileRef.current?.click();
+                            }
+                        }
+                    >
+                        Upload to Everyone
+                    </Button>
+                </Tooltip>                
                 {importingDocuments && importingDocuments.length > 0 && <Spinner size="tiny" />}
                 {/* Hardcode vector database as we don't support switching vector store dynamically now. */}
                 <div className={classes.vectorDatabase}>

@@ -2,7 +2,7 @@
 
 import { FC, useCallback, useState } from 'react';
 
-import { useMsal } from '@azure/msal-react';
+import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import {
     Avatar,
     Button,
@@ -17,7 +17,7 @@ import {
     shorthands,
     tokens,
 } from '@fluentui/react-components';
-import { Settings24Regular } from '@fluentui/react-icons';
+import { Person24Filled, Settings24Regular } from '@fluentui/react-icons';
 import { AuthHelper } from '../../libs/auth/AuthHelper';
 import { useAppSelector } from '../../redux/app/hooks';
 import { RootState, resetState } from '../../redux/app/store';
@@ -26,11 +26,11 @@ import { SettingsDialog } from './settings-dialog/SettingsDialog';
 
 export const useClasses = makeStyles({
     root: {
-        marginRight: tokens.spacingHorizontalXL,
+        marginBottom: tokens.spacingVerticalNone,
     },
     persona: {
-        ...shorthands.padding(tokens.spacingVerticalM, tokens.spacingVerticalMNudge),
-        overflowWrap: 'break-word',
+        ...shorthands.padding(tokens.spacingVerticalM, tokens.spacingHorizontalMNudge),
+        overflowWrap: 'anywhere',
     },
 });
 
@@ -41,6 +41,7 @@ interface IUserSettingsProps {
 export const UserSettingsMenu: FC<IUserSettingsProps> = ({ setLoadingState }) => {
     const classes = useClasses();
     const { instance } = useMsal();
+    const isAuthenticated = useIsAuthenticated();
 
     const { activeUserInfo, features } = useAppSelector((state: RootState) => state.app);
 
@@ -48,21 +49,23 @@ export const UserSettingsMenu: FC<IUserSettingsProps> = ({ setLoadingState }) =>
 
     const onLogout = useCallback(() => {
         setLoadingState();
-        AuthHelper.logoutAsync(instance);
+        AuthHelper.logoutAsync(instance);   
         resetState();
     }, [instance, setLoadingState]);
 
     return (
         <>
             {AuthHelper.isAuthAAD() ? (
+                isAuthenticated ? (
                 <Menu>
                     <MenuTrigger disableButtonEnhancement>
                         {
-                            <Avatar
+                                <Avatar
                                 className={classes.root}
                                 key={activeUserInfo?.username}
                                 name={activeUserInfo?.username}
-                                size={28}
+                                size={36}
+                                color='brand'
                                 badge={
                                     !features[FeatureKeys.SimplifiedExperience].enabled
                                         ? { status: 'available' }
@@ -99,7 +102,15 @@ export const UserSettingsMenu: FC<IUserSettingsProps> = ({ setLoadingState }) =>
                             </MenuItem>
                         </MenuList>
                     </MenuPopover>
-                </Menu>
+                    </Menu>
+                ) : (
+                    <Avatar
+                        className={classes.root}
+                        size={36}
+                        icon={<Person24Filled />}
+                        color='neutral'
+                    />
+                )
             ) : (
                 <Button
                     data-testid="settingsButtonWithoutAuth"
