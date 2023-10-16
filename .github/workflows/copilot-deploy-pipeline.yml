@@ -45,7 +45,7 @@ jobs:
       BACKEND_HOST: ${{needs.integration.outputs.backend-host}}
 
   production:
-    needs: integration-tests
+    needs: [integration-tests, build-webapi, build-memorypipeline, build-plugins]
     uses: ./.github/workflows/copilot-deploy-environment.yml
     with:
       ENVIRONMENT: production
