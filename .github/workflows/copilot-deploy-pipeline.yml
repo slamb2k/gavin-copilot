@@ -42,7 +42,7 @@ jobs:
     needs: integration
     with:
       ENVIRONMENT: integration
-      BACKEND_HOST: ${{needs.int.outputs.backend-host}}
+      BACKEND_HOST: ${{needs.integration.outputs.backend-host}}
 
   production:
     needs: integration-tests
