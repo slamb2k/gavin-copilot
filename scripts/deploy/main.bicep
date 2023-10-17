@@ -783,7 +783,7 @@ resource appInsightsWeb 'Microsoft.Insights/components@2020-02-02' = {
 resource appInsightExtensionWeb 'Microsoft.Web/sites/siteextensions@2022-09-01' = {
   parent: appServiceWeb
   name: 'Microsoft.ApplicationInsights.AzureWebSites'
-  dependsOn: [ appServiceWebConfig ]
+  dependsOn: [ appServiceWebConfig, appServiceMemoryPipelineConfig ]
 }
 
 resource appInsightsMemoryPipeline 'Microsoft.Insights/components@2020-02-02' = {
@@ -802,7 +802,7 @@ resource appInsightsMemoryPipeline 'Microsoft.Insights/components@2020-02-02' = 
 resource appInsightExtensionMemoryPipeline 'Microsoft.Web/sites/siteextensions@2022-09-01' = {
   parent: appServiceMemoryPipeline
   name: 'Microsoft.ApplicationInsights.AzureWebSites'
-  dependsOn: [ appServiceMemoryPipelineConfig ]
+  dependsOn: [ appServiceMemoryPipelineConfig, appServiceWeb ]
 }
 
 resource appInsightsWebSearcherPlugin 'Microsoft.Insights/components@2020-02-02' = {
