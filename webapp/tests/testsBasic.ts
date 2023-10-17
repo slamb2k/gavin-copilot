@@ -35,7 +35,7 @@ export async function basicBotResponses(page) {
     await expect((await chatHistoryItems.all()).length).toBe(5);
 
     // Expect the last message to be the bot's response.
-    await expect(chatHistoryItems.last()).toHaveAttribute('data-username', 'Copilot');
+    await expect(chatHistoryItems.last()).toHaveAttribute('data-username', '{process.env.REACT_APP_SITE_TITLE}');
 
     await util.postUnitTest(page);
 }
@@ -47,7 +47,7 @@ export async function chatTitleChange(page) {
     await util.loginAndCreateNewChat(page);
 
     await page.getByTestId('editChatTitleButtonSimplified').click();
-    await page.locator('input[type="text"]').fill('Copilot Unit Tests');
+    await page.locator('input[type="text"]').fill('{process.env.REACT_APP_SITE_TITLE} Unit Tests');
     await page.locator('input[type="text"]').press('Enter');
 
     await util.postUnitTest(page);

@@ -1,6 +1,7 @@
-import { Image, makeStyles } from '@fluentui/react-components';
+import { Image, makeStyles, shorthands, tokens } from '@fluentui/react-components';
 import '../../index.css';
 
+import gavinLogo from '../../assets/gavin-logo.png';
 import gavinTypeLogo from '../../assets/gavin-type-logo.png';
 
 const useClasses = makeStyles({
@@ -10,9 +11,9 @@ const useClasses = makeStyles({
         marginRight: 'auto',
         marginTop: 'auto',
         marginBottom: 'auto',
-        marginLeft: '50px',
+        marginLeft: '40px',
         height: '30%',
-
+        ...shorthands.gap(tokens.spacingHorizontalL),
     },
 });
 
@@ -22,6 +23,7 @@ export const LogoSection = () => {
     return (
         <div className={classes.root}>
             <Image src={gavinTypeLogo} />
+            <Image src={gavinLogo} />
         </div>
     );
 };

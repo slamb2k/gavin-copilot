@@ -117,7 +117,7 @@ export const ChatListItem: FC<IChatListItemProps> = ({
         >
             <Persona
                 avatar={{
-                    name: 'Copilot Chat',
+                    name: process.env.REACT_APP_SITE_TITLE,
                     color: 'colorful'
                 }}
                 presence={!features[FeatureKeys.SimplifiedExperience].enabled ? { status: 'available' } : undefined}
