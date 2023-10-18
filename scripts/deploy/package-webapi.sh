@@ -112,6 +112,10 @@ if [[ -z "$SKIP_FRONTEND" ]]; then
 
     pushd "$SCRIPT_ROOT/../../webapp"
 
+    ENV_FILE_PATH=".env"
+    echo "Writing environment variables to '$ENV_FILE_PATH'..."
+    echo "REACT_APP_SITE_TITLE=GAVIN > $ENV_FILE_PATH
+
     echo "Installing yarn dependencies..."
     yarn install
     if [ $? -ne 0 ]; then
