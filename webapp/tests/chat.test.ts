@@ -7,7 +7,7 @@ import * as mutests from './testsMultiuser';
 import * as plannertests from './testsPlanner';
 import * as util from './utils';
 
-test.describe('{process.env.REACT_APP_SITE_TITLE} App Test Suite', () => {
+test.describe(`${process.env.REACT_APP_SITE_TITLE} App Test Suite`, () => {
     // Note: A new chat session is opened for each test so that
     // the chat history is not polluted and the LLM is not confused.
     test.describe.configure({ mode: 'parallel' });
