@@ -139,7 +139,7 @@ export const PluginGallery: React.FC = () => {
                         }
                     >
                         <Subtitle1 block className={classes.title}>
-                            Enable {process.env.REACT_APP_SITE_TITLE} Plugins
+                            Enable {process.env.REACT_APP_TITLE} Plugins
                         </Subtitle1>
                         <Body1 as="p" block className={classes.description}>
                             Authorize plugins and have more powerful bots!

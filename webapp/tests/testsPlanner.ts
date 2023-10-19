@@ -22,7 +22,7 @@ export async function klarnaTest(page) {
 
     // Expect the last message to be the bot's response.
     const chatHistoryItems = page.getByTestId(new RegExp('chat-history-item-*'));
-    await expect(chatHistoryItems.last()).toHaveAttribute('data-username', `${process.env.REACT_APP_SITE_TITLE}`);
+    await expect(chatHistoryItems.last()).toHaveAttribute('data-username', `${process.env.REACT_APP_TITLE}`);
 
     // Specifically accessing the us site of klarna so any results should have a dollar sign
     await expect(chatHistoryItems.last()).toContainText('$');
@@ -57,7 +57,7 @@ export async function jiraTest(page) {
 
     // Expect the last message to be the bot's response.
     const chatHistoryItems = page.getByTestId(new RegExp('chat-history-item-*'));
-    await expect(chatHistoryItems.last()).toHaveAttribute('data-username', `${process.env.REACT_APP_SITE_TITLE}`);
+    await expect(chatHistoryItems.last()).toHaveAttribute('data-username', `${process.env.REACT_APP_TITLE}`);
     await expect(chatHistoryItems.last()).toContainText('SKTES');
 
     var chatbotResponse = await util.getLastChatMessageContentsAsStringWHistory(page, chatHistoryItems);
@@ -94,7 +94,7 @@ export async function githubTest(page) {
 
     // Expect the last message to be the bot's response.
     const chatHistoryItems = page.getByTestId(new RegExp('chat-history-item-*'));
-    await expect(chatHistoryItems.last()).toHaveAttribute('data-username', `${process.env.REACT_APP_SITE_TITLE}`);
+    await expect(chatHistoryItems.last()).toHaveAttribute('data-username', `${process.env.REACT_APP_TITLE}`);
 
     var chatbotResponse = await util.getLastChatMessageContentsAsStringWHistory(page, chatHistoryItems);
     await util.disablePluginAndEvaluateResponse(page, githubQuery, chatbotResponse);

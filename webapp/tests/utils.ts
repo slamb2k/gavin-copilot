@@ -27,7 +27,7 @@ export async function loginHelper(page, useraccount, password) {
     }
 
     // After login, the page should redirect back to the app.
-    await expect(page).toHaveTitle(process.env.REACT_APP_SITE_TITLE);
+    await expect(page).toHaveTitle(process.env.REACT_APP_TITLE);
 }
 export async function loginHelperAnotherUser(page, useraccount, password) {
     await page.goto('/');
@@ -43,7 +43,7 @@ export async function loginHelperAnotherUser(page, useraccount, password) {
     await page.getByRole('button', { name: 'Sign in' }).click();
 
     // After login, the page should redirect back to the app.
-    await expect(page).toHaveTitle(process.env.REACT_APP_SITE_TITLE);
+    await expect(page).toHaveTitle(process.env.REACT_APP_TITLE);
 
     // Get the permission popup if they open
     page.on('popup', async (popup) => {

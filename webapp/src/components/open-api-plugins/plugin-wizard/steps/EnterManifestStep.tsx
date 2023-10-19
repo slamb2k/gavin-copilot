@@ -82,7 +82,7 @@ export const EnterManifestStep: React.FC<IEnterManifestStepProps> = ({
                 </div>
             )}
             <Body1 italic>
-                Note: {process.env.REACT_APP_SITE_TITLE} currently only supports plugins requiring{' '}
+                Note: {process.env.REACT_APP_TITLE} currently only supports plugins requiring{' '}
                 <a
                     href={'https://platform.openai.com/docs/plugins/authentication/no-authentication'}
                     target="_blank"

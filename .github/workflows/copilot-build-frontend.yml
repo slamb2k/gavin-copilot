@@ -28,6 +28,9 @@ jobs:
         run: |
           #!/usr/bin/env bash
           set -e # exit with nonzero exit code if anything fails
+          echo "Setting app title to $APP_TITLE"
+          $ENV_FILE_PATH=".env"
+          echo "REACT_APP_TITLE=${{vars.CC_APP_TITLE}}" >$ENV_FILE_PATH
           echo "Running yarn install, yarn build, & yarn format"
           yarn install --frozen-lockfile # install dependencies and ensure lockfile is unchanged.
           yarn build # run build script

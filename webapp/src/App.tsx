@@ -116,7 +116,7 @@ const App = () => {
                 //     dispatch(
                 //         addAlert({
                 //             message:
-                //                 'By using {process.env.REACT_APP_SITE_TITLE}, you agree to protect sensitive data, not store it in chat, and allow chat history collection for service improvements. This tool is for internal use only.',
+                //                 'By using {process.env.REACT_APP_TITLE}, you agree to protect sensitive data, not store it in chat, and allow chat history collection for service improvements. This tool is for internal use only.',
                 //             type: AlertType.Info,
                 //         }),
                 //     );
