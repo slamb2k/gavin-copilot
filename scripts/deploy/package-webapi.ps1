@@ -9,6 +9,10 @@ param(
     $BuildConfiguration = "Release",
     
     [string]
+    # App Title.
+    $AppTitle = "Chat Copilot",
+
+    [string]
     # .NET framework to publish.
     $DotNetFramework = "net6.0",
     
@@ -58,6 +62,13 @@ if ($LASTEXITCODE -ne 0) {
 
 if (-Not $SkipFrontendFiles) {
     Write-Host "Building static frontend files..."
+
+    # Set ASCII as default encoding for Out-File
+    $PSDefaultParameterValues['Out-File:Encoding'] = 'ascii'
+
+    $envFilePath = "$PSScriptRoot/../../webapp/.env"
+    Write-Host "Writing environment variables to '$envFilePath'..."
+    "REACT_APP_TITLE=$AppTitle" | Out-File -FilePath $envFilePath
 
     Push-Location -Path "$PSScriptRoot/../../webapp"
 

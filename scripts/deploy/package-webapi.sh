@@ -12,6 +12,7 @@ usage() {
     echo ""
     echo "Arguments:"
     echo "  -c, --configuration CONFIGURATION      Build configuration (default: Release)"
+    echo "  -at, --app-APP_TITLE APP_TITLE         App Title (default: Chat Copilot)"
     echo "  -d, --dotnet DOTNET_FRAMEWORK_VERSION  Target dotnet framework (default: net6.0)"
     echo "  -r, --runtime TARGET_RUNTIME           Runtime identifier (default: linux-x64)"
     echo "  -o, --output OUTPUT_DIRECTORY          Output directory (default: $SCRIPT_ROOT)"
@@ -27,6 +28,11 @@ while [[ $# -gt 0 ]]; do
     case $key in
     -c | --configuration)
         CONFIGURATION="$2"
+        shift
+        shift
+        ;;
+    -at | --app-title)
+        APP_TITLE="$2"
         shift
         shift
         ;;
@@ -75,6 +81,7 @@ echo "Building backend executables..."
 
 # Set defaults
 : "${CONFIGURATION:="Release"}"
+: "${APP_TITLE:="Chat Copilot"}"
 : "${DOTNET:="net6.0"}"
 : "${RUNTIME:="linux-x64"}"
 : "${VERSION:="0.0.0"}"
@@ -110,11 +117,11 @@ fi
 if [[ -z "$SKIP_FRONTEND" ]]; then
     echo "Building static frontend files..."
 
-    pushd "$SCRIPT_ROOT/../../webapp"
-
-    ENV_FILE_PATH=".env"
+    ENV_FILE_PATH="$SCRIPT_ROOT/../../webapp/.env"
     echo "Writing environment variables to '$ENV_FILE_PATH'..."
-    echo "REACT_APP_TITLE=GAVIN" >$ENV_FILE_PATH
+    echo "REACT_APP_TITLE=$APP_TITLE" >$ENV_FILE_PATH
+
+    pushd "$SCRIPT_ROOT/../../webapp"
 
     echo "Installing yarn dependencies..."
     yarn install
