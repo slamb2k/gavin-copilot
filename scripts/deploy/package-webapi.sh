@@ -59,11 +59,11 @@ while [[ $# -gt 0 ]]; do
         NO_ZIP=true
         shift
         ;;
-    -s|--skip-frontend)
+    -s | --skip-frontend)
         SKIP_FRONTEND=true
         shift
         ;;
-        *)
+    *)
         echo "Unknown option $1"
         usage
         exit 1
@@ -71,7 +71,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo  "Building backend executables..."
+echo "Building backend executables..."
 
 # Set defaults
 : "${CONFIGURATION:="Release"}"
@@ -114,7 +114,7 @@ if [[ -z "$SKIP_FRONTEND" ]]; then
 
     ENV_FILE_PATH=".env"
     echo "Writing environment variables to '$ENV_FILE_PATH'..."
-    echo "REACT_APP_SITE_TITLE=GAVIN > $ENV_FILE_PATH
+    echo "REACT_APP_SITE_TITLE=GAVIN" >$ENV_FILE_PATH
 
     echo "Installing yarn dependencies..."
     yarn install
