@@ -12,7 +12,7 @@ usage() {
     echo ""
     echo "Arguments:"
     echo "  -c, --configuration CONFIGURATION      Build configuration (default: Release)"
-    echo "  -at, --app-APP_TITLE APP_TITLE         App Title (default: Chat Copilot)"
+    echo "  -at, --app-title APP_TITLE             App Title (default: Chat Copilot)"
     echo "  -d, --dotnet DOTNET_FRAMEWORK_VERSION  Target dotnet framework (default: net6.0)"
     echo "  -r, --runtime TARGET_RUNTIME           Runtime identifier (default: linux-x64)"
     echo "  -o, --output OUTPUT_DIRECTORY          Output directory (default: $SCRIPT_ROOT)"
@@ -117,10 +117,6 @@ fi
 if [[ -z "$SKIP_FRONTEND" ]]; then
     echo "Building static frontend files..."
 
-    ENV_FILE_PATH="$SCRIPT_ROOT/../../webapp/.env"
-    echo "Writing environment variables to '$ENV_FILE_PATH'..."
-    echo "REACT_APP_TITLE=$APP_TITLE" >$ENV_FILE_PATH
-
     pushd "$SCRIPT_ROOT/../../webapp"
 
     echo "Installing yarn dependencies..."
@@ -136,6 +132,13 @@ if [[ -z "$SKIP_FRONTEND" ]]; then
         echo "Failed to build webapp"
         exit 1
     fi
+
+    echo "Injecting environment variables..."
+    ENV_FILE_PATH=".env"
+    echo "Writing environment variables to '$ENV_FILE_PATH'..."
+    echo "REACT_APP_TITLE=$APP_TITLE" >$ENV_FILE_PATH
+
+    npx react-inject-env set
 
     popd
 

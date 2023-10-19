@@ -63,13 +63,6 @@ if ($LASTEXITCODE -ne 0) {
 if (-Not $SkipFrontendFiles) {
     Write-Host "Building static frontend files..."
 
-    # Set ASCII as default encoding for Out-File
-    $PSDefaultParameterValues['Out-File:Encoding'] = 'ascii'
-
-    $envFilePath = "$PSScriptRoot/../../webapp/.env"
-    Write-Host "Writing environment variables to '$envFilePath'..."
-    "REACT_APP_TITLE=$AppTitle" | Out-File -FilePath $envFilePath
-
     Push-Location -Path "$PSScriptRoot/../../webapp"
 
     Write-Host "Installing yarn dependencies..."
@@ -83,6 +76,16 @@ if (-Not $SkipFrontendFiles) {
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }
+
+    # Set ASCII as default encoding for Out-File
+    $PSDefaultParameterValues['Out-File:Encoding'] = 'ascii'
+
+    echo "Injecting environment variables..."
+    $envFilePath = ".env"
+    Write-Host "Writing environment variables to '$envFilePath'..."
+    "REACT_APP_TITLE=$AppTitle" | Out-File -FilePath $envFilePath
+
+    npx react-inject-env set
 
     Pop-Location
 

@@ -75,7 +75,7 @@ export const PlanViewer: React.FC<PlanViewerProps> = ({ message, messageIndex })
 
     return (
         <div className={classes.container}>
-            <Text>Based on the request, {process.env.REACT_APP_SITE_TITLE} will run the following steps:</Text>
+            <Text>Based on the request, {process.env.REACT_APP_TITLE} will run the following steps:</Text>
             <PlanBody
                 plan={plan}
                 setPlan={setPlan}
