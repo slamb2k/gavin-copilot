@@ -80,12 +80,10 @@ if (-Not $SkipFrontendFiles) {
     # Set ASCII as default encoding for Out-File
     $PSDefaultParameterValues['Out-File:Encoding'] = 'ascii'
 
-    echo "Injecting environment variables..."
+    Write-Host "Injecting environment variables..."
     $envFilePath = ".env"
     Write-Host "Writing environment variables to '$envFilePath'..."
     "REACT_APP_TITLE=$AppTitle" | Out-File -FilePath $envFilePath
-
-    npx react-inject-env set
 
     Pop-Location
 
