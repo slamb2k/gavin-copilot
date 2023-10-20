@@ -17,7 +17,7 @@ import { FeatureKeys } from './redux/features/app/AppState';
 import { setActiveUserInfo, setServiceInfo } from './redux/features/app/appSlice';
 import { semanticKernelDarkTheme, semanticKernelLightTheme } from './styles';
 
-import headerBackground from './assets/header-background.png';
+import headerBackground from './assets/gavin-carpark.png';
 import msOpenAILogo from './assets/ms-openai-logo.png';
 
 export const useClasses = makeStyles({
@@ -33,7 +33,7 @@ export const useClasses = makeStyles({
         flexDirection: 'row',
         justifyContent: 'space-between',  
         backgroundImage: `url(${headerBackground})`,
-        height: '15vh'        
+        height: '14vh'        
     },
     headerLeft: {
         display: 'flex',
