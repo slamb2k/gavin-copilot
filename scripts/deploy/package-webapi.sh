@@ -133,13 +133,6 @@ if [[ -z "$SKIP_FRONTEND" ]]; then
         exit 1
     fi
 
-    echo "Injecting environment variables..."
-    ENV_FILE_PATH=".env"
-    echo "Writing environment variables to '$ENV_FILE_PATH'..."
-    echo "REACT_APP_TITLE=$APP_TITLE" >$ENV_FILE_PATH
-
-    npx react-inject-env set
-
     popd
 
     echo "Copying frontend files to package"

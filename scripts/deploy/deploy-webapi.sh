@@ -10,6 +10,7 @@ usage() {
     echo "  -s, --subscription SUBSCRIPTION         Subscription to which to make the deployment (mandatory)"
     echo "  -rg, --resource-group RESOURCE_GROUP    Resource group name from a 'deploy-azure.sh' deployment (mandatory)"
     echo "  -p, --package PACKAGE_FILE_PATH         Path to the package file from a 'package-webapi.sh' run (default: \"./out/webapi.zip\")"
+    echo "  -e, --env-file ENV_FILE_PATH            Path to a custom env file to deploy"
     echo "  -o, --slot DEPLOYMENT_SLOT              Name of the target web app deployment slot"
     echo "  -r, --register-app                      Switch to add our URI in app registration's redirect URIs if missing"
     echo "  -c, --register-cors                     Register service with the plugins as allowed CORS origin"
@@ -19,36 +20,41 @@ usage() {
 while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
-    -d|--deployment-name)
+    -d | --deployment-name)
         DEPLOYMENT_NAME="$2"
         shift
         shift
         ;;
-    -s|--subscription)
+    -s | --subscription)
         SUBSCRIPTION="$2"
         shift
         shift
         ;;
-    -rg|--resource-group)
+    -rg | --resource-group)
         RESOURCE_GROUP="$2"
         shift
         shift
         ;;
-    -p|--package)
+    -p | --package)
         PACKAGE_FILE_PATH="$2"
         shift
         shift
         ;;
-    -r|--register-app)
+    -e | --env-file)
+        ENV_FILE_PATH="$2"
+        shift
+        shift
+        ;;
+    -r | --register-app)
         REGISTER_APP=true
         shift
         ;;
-    -o|--slot)
+    -o | --slot)
         DEPLOYMENT_SLOT="$2"
         shift
         shift
         ;;
-    -c|--register-cors)
+    -c | --register-cors)
         REGISTER_CORS=true
         shift
         ;;
@@ -72,6 +78,12 @@ fi
 # Ensure $PACKAGE_FILE_PATH exists
 if [[ ! -f "$PACKAGE_FILE_PATH" ]]; then
     echo "Package file '$PACKAGE_FILE_PATH' does not exist. Have you run 'package-webapi.sh' yet?"
+    exit 1
+fi
+
+# Ensure $ENV_FILE_PATH exists
+if [[ ! -f "$ENV_FILE_PATH" ]]; then
+    echo "Env file '$ENV_FILE_PATH' does not exist. Check the path and try again."
     exit 1
 fi
 
@@ -106,6 +118,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+zip $PACKAGE_FILE_PATH $ENV_FILE_PATH
+
 # Set up deployment command as a string
 AZ_WEB_APP_CMD="az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $WEB_API_NAME --src $PACKAGE_FILE_PATH"
 
@@ -127,9 +141,9 @@ if [ -n "$DEPLOYMENT_SLOT" ]; then
         fi
     done
 
-    if [[ "$SLOT_EXISTS" = false ]]; then 
+    if [[ "$SLOT_EXISTS" = false ]]; then
         echo "Deployment slot ${DEPLOYMENT_SLOT} does not exist, creating..."
-        
+
         az webapp deployment slot create --slot=$DEPLOYMENT_SLOT --resource-group=$RESOURCE_GROUP --name $WEB_API_NAME
 
         ORIGINS=$(az webapp deployment slot list --resource-group=$RESOURCE_GROUP --name $WEB_API_NAME | jq '.[].defaultHostName')
@@ -161,8 +175,8 @@ if [[ -n $REGISTER_APP ]]; then
                 REDIRECT_URIS=$(echo "$ORIGIN")
             fi
             NEED_TO_UPDATE_REG=true
-        fi 
-    done 
+        fi
+    done
 
     if [ $NEED_TO_UPDATE_REG = true ]; then
         BODY="{spa:{redirectUris:['$(echo "$REDIRECT_URIS")']}}"
@@ -195,9 +209,9 @@ if [[ -n $REGISTER_CORS ]]; then
                     echo "Failed to update CORS origins with $ORIGIN"
                     exit 1
                 fi
-            fi 
-        done 
-    done 
+            fi
+        done
+    done
 fi
 
 echo "To verify your deployment, go to 'https://$WEB_API_URL/' in your browser."
