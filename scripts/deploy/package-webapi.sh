@@ -119,6 +119,16 @@ if [[ -z "$SKIP_FRONTEND" ]]; then
 
     pushd "$SCRIPT_ROOT/../../webapp"
 
+    filePath="./.env.production"
+    if [ -f "$filePath" ]; then
+        rm "$filePath"
+    fi
+
+    echo "REACT_APP_BACKEND_URI=" >>"$filePath"
+    echo "REACT_APP_SK_VERSION=$Version" >>"$filePath"
+    echo "REACT_APP_SK_BUILD_INFO=$InformationalVersion" >>"$filePath"
+    echo "REACT_APP_TITLE=$APP_TITLE" >>"$filePath"
+
     echo "Installing yarn dependencies..."
     yarn install
     if [ $? -ne 0 ]; then
@@ -132,13 +142,6 @@ if [[ -z "$SKIP_FRONTEND" ]]; then
         echo "Failed to build webapp"
         exit 1
     fi
-
-    echo "Injecting environment variables..."
-    ENV_FILE_PATH=".env"
-    echo "Writing environment variables to '$ENV_FILE_PATH'..."
-    echo "REACT_APP_TITLE=$APP_TITLE" >$ENV_FILE_PATH
-
-    npx react-inject-env set
 
     popd
 
