@@ -72,6 +72,7 @@ if (-Not $SkipFrontendFiles) {
         Remove-Item $filePath
     }
     
+    Add-Content -Path $filePath -Value "REACT_APP_TITLE=$AppTitle"
     Add-Content -Path $filePath -Value "REACT_APP_BACKEND_URI="
     Add-Content -Path $filePath -Value "REACT_APP_SK_VERSION=$Version"
     Add-Content -Path $filePath -Value "REACT_APP_SK_BUILD_INFO=$InformationalVersion"

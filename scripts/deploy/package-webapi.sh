@@ -124,6 +124,7 @@ if [[ -z "$SKIP_FRONTEND" ]]; then
         rm "$filePath"
     fi
 
+	echo "REACT_APP_TITLE=$APP_TITLE" >> "$filePath"
     echo "REACT_APP_BACKEND_URI=" >> "$filePath"
     echo "REACT_APP_SK_VERSION=$Version" >> "$filePath"
     echo "REACT_APP_SK_BUILD_INFO=$InformationalVersion" >> "$filePath"
