@@ -50,13 +50,7 @@ public class ExternalInformationSkill
     ///  Options for the planner.
     /// </summary>
     private readonly PlannerOptions? _plannerOptions;
-    public PlannerOptions? PlannerOptions
-    {
-        get
-        {
-            return this._plannerOptions;
-        }
-    }
+    public PlannerOptions? PlannerOptions => this._plannerOptions;
 
     /// <summary>
     /// Proposed plan to return for approval.
@@ -66,7 +60,7 @@ public class ExternalInformationSkill
     /// <summary>
     /// Stepwise thought process to return for view.
     /// </summary>
-    public PlanExecutionMetadata? StepwiseThoughtProcess { get; private set; }
+    public StepwiseThoughtProcess? StepwiseThoughtProcess { get; private set; }
 
     /// <summary>
     /// Header to indicate plan results.
@@ -114,7 +108,13 @@ public class ExternalInformationSkill
         // Run stepwise planner if PlannerOptions.Type == Stepwise
         if (this._planner.PlannerOptions?.Type == PlanType.Stepwise)
         {
-            return await this.RunStepwisePlannerAsync(goal, context, cancellationToken);
+            var plannerContext = context.Clone();
+            plannerContext = await this._planner.RunStepwisePlannerAsync(goal, context, cancellationToken);
+            this.StepwiseThoughtProcess = new StepwiseThoughtProcess(
+                plannerContext.Variables["stepsTaken"],
+                plannerContext.Variables["timeTaken"],
+                plannerContext.Variables["skillCount"]);
+            return $"{plannerContext.Variables.Input.Trim()}\n";
         }
 
         // Create a plan and set it in context for approval.
@@ -196,29 +196,6 @@ public class ExternalInformationSkill
         }
 
         return $"{functionsUsed}\n{ResultHeader}{planResult.Trim()}";
-    }
-
-    /// <summary>
-    /// Determines whether to use the stepwise planner result as the bot response, thereby bypassing meta prompt generation and completion.
-    /// </summary>
-    /// <param name="planResult">The result obtained from the stepwise planner.</param>
-    /// <returns>
-    /// True if the stepwise planner result should be used as the bot response,
-    /// false otherwise.
-    /// </returns>
-    /// <remarks>
-    /// This method checks the following conditions:
-    /// 1. The plan result is not null, empty, or whitespace.
-    /// 2. The planner options are specified, and the plan type is set to Stepwise.
-    /// 3. The UseStepwiseResultAsBotResponse option is enabled.
-    /// 4. The StepwiseThoughtProcess is not null.
-    /// </remarks>
-    public bool UseStepwiseResultAsBotResponse(string planResult)
-    {
-        return !string.IsNullOrWhiteSpace(planResult)
-            && this._plannerOptions?.Type == PlanType.Stepwise
-            && this._plannerOptions.UseStepwiseResultAsBotResponse
-            && this.StepwiseThoughtProcess != null;
     }
 
     #region Private

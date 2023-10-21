@@ -66,16 +66,6 @@ if (-Not $SkipFrontendFiles) {
     Write-Host "Building static frontend files..."
 
     Push-Location -Path "$PSScriptRoot/../../webapp"
-    
-    $filePath = "./.env.production"
-    if (Test-path $filePath -PathType leaf) {
-        Remove-Item $filePath
-    }
-    
-    Add-Content -Path $filePath -Value "REACT_APP_BACKEND_URI="
-    Add-Content -Path $filePath -Value "REACT_APP_SK_VERSION=$Version"
-    Add-Content -Path $filePath -Value "REACT_APP_SK_BUILD_INFO=$InformationalVersion"
-    Add-Content -Path $filePath -Value "REACT_APP_TITLE=$AppTitle"
 
     Write-Host "Installing yarn dependencies..."
     yarn install

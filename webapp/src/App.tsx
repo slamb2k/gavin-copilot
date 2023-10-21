@@ -84,8 +84,6 @@ enum AppState {
     SigningOut,
 }
 
-// const midJourneyPrompt = "Midjourney Prompt: A photograph of a lonely cyborg wandering around a carpark late at night, trying to remember where he parked his car. Ensure the main subject of the image is on the right side of the shot and isn't too far away. --ar 16:9 --v 5.2 --style raw"
-
 const App = () => {
     const classes = useClasses();
 
@@ -253,7 +251,19 @@ const Chat = ({
                     </div>
                 )}
             </div>
-            {appState === AppState.ProbeForBackend && <BackendProbe onBackendFound={onBackendFound} />}
+            {appState === AppState.ProbeForBackend && (
+                <BackendProbe
+                    onBackendFound={() => {
+                        setAppState(
+                            AuthHelper.isAuthAAD()
+                                ? // if AAD is enabled, we need to set the active account before loading chats
+                                  AppState.SettingUserInfo
+                                : // otherwise, we can load chats immediately
+                                  AppState.LoadingChats,
+                        );
+                    }}
+                />
+            )}
             {appState === AppState.SettingUserInfo && (
                 <Loading text={'Hang tight while we fetch your information...'} />
             )}

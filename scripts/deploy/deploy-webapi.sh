@@ -11,45 +11,45 @@ usage() {
     echo "  -rg, --resource-group RESOURCE_GROUP    Resource group name from a 'deploy-azure.sh' deployment (mandatory)"
     echo "  -p, --package PACKAGE_FILE_PATH         Path to the package file from a 'package-webapi.sh' run (default: \"./out/webapi.zip\")"
     echo "  -o, --slot DEPLOYMENT_SLOT              Name of the target web app deployment slot"
-    echo "  -sr, --skip-app-registration            Skip adding our URI in app registration's redirect URIs"
-    echo "  -sc, --skip-cors-registration           Skip registration of service with the plugins as allowed CORS origin"
+    echo "  -r, --register-app                      Switch to add our URI in app registration's redirect URIs if missing"
+    echo "  -c, --register-cors                     Register service with the plugins as allowed CORS origin"
 }
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
-    -d|--deployment-name)
+    -d | --deployment-name)
         DEPLOYMENT_NAME="$2"
         shift
         shift
         ;;
-    -s|--subscription)
+    -s | --subscription)
         SUBSCRIPTION="$2"
         shift
         shift
         ;;
-    -rg|--resource-group)
+    -rg | --resource-group)
         RESOURCE_GROUP="$2"
         shift
         shift
         ;;
-    -p|--package)
+    -p | --package)
         PACKAGE_FILE_PATH="$2"
         shift
         shift
         ;;
-    -r|--skip-app-registration)
-        REGISTER_APP=false
+    -r | --register-app)
+        REGISTER_APP=true
         shift
         ;;
-    -o|--slot)
+    -o | --slot)
         DEPLOYMENT_SLOT="$2"
         shift
         shift
         ;;
-    -c|--skip-cors-registration)
-        REGISTER_CORS=false
+    -c | --register-cors)
+        REGISTER_CORS=true
         shift
         ;;
     *)
@@ -127,9 +127,9 @@ if [ -n "$DEPLOYMENT_SLOT" ]; then
         fi
     done
 
-    if [[ "$SLOT_EXISTS" = false ]]; then 
+    if [[ "$SLOT_EXISTS" = false ]]; then
         echo "Deployment slot ${DEPLOYMENT_SLOT} does not exist, creating..."
-        
+
         az webapp deployment slot create --slot=$DEPLOYMENT_SLOT --resource-group=$RESOURCE_GROUP --name $WEB_API_NAME
 
         ORIGINS=$(az webapp deployment slot list --resource-group=$RESOURCE_GROUP --name $WEB_API_NAME | jq '.[].defaultHostName')
@@ -143,7 +143,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-if [[ -z $REGISTER_APP ]]; then
+if [[ -n $REGISTER_APP ]]; then
     WEBAPI_SETTINGS=$(az webapp config appsettings list --name $WEB_API_NAME --resource-group $RESOURCE_GROUP --output json)
     FRONTEND_CLIENT_ID=$(echo $WEBAPI_SETTINGS | jq -r '.[] | select(.name == "Frontend:AadClientId") | .value')
     OBJECT_ID=$(az ad app show --id $FRONTEND_CLIENT_ID | jq -r '.id')
@@ -161,8 +161,8 @@ if [[ -z $REGISTER_APP ]]; then
                 REDIRECT_URIS=$(echo "$ORIGIN")
             fi
             NEED_TO_UPDATE_REG=true
-        fi 
-    done 
+        fi
+    done
 
     if [ $NEED_TO_UPDATE_REG = true ]; then
         BODY="{spa:{redirectUris:['$(echo "$REDIRECT_URIS")']}}"
@@ -177,13 +177,13 @@ if [[ -z $REGISTER_APP ]]; then
             --body $BODY
 
         if [ $? -ne 0 ]; then
-            echo "Failed to update app registration $OBJECT_ID with redirect URIs - Use -sc switch to skip this step"
+            echo "Failed to update app registration $OBJECT_ID with redirect URIs"
             exit 1
         fi
     fi
 fi
 
-if [[ -z $REGISTER_CORS ]]; then
+if [[ -n $REGISTER_CORS ]]; then
     for PLUGIN_NAME in $PLUGIN_NAMES; do
         ALLOWED_ORIGINS=$(az webapp cors show --name $PLUGIN_NAME --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTION | jq -r '.allowedOrigins[]')
         for ADDRESS in $(echo "$ORIGINS"); do
@@ -192,12 +192,12 @@ if [[ -z $REGISTER_CORS ]]; then
             if [[ ! "$ALLOWED_ORIGINS" =~ "$ORIGIN" ]]; then
                 az webapp cors add --name $PLUGIN_NAME --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTION --allowed-origins "$ORIGIN"
                 if [ $? -ne 0 ]; then
-                    echo "Failed to update CORS origins with $ORIGIN - Use -sc switch to skip this step"
+                    echo "Failed to update CORS origins with $ORIGIN"
                     exit 1
                 fi
-            fi 
-        done 
-    done 
+            fi
+        done
+    done
 fi
 
 echo "To verify your deployment, go to 'https://$WEB_API_URL/' in your browser."

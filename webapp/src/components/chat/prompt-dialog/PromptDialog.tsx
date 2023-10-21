@@ -27,7 +27,6 @@ import React from 'react';
 import { BotResponsePrompt, DependencyDetails, PromptSectionsNameMap } from '../../../libs/models/BotResponsePrompt';
 import { ChatMessageType, IChatMessage } from '../../../libs/models/ChatMessage';
 import { PlanType } from '../../../libs/models/Plan';
-import { PlanExecutionMetadata } from '../../../libs/models/PlanExecutionMetadata';
 import { useDialogClasses } from '../../../styles';
 import { TokenUsageGraph } from '../../token-usage/TokenUsageGraph';
 import { formatParagraphTextContent } from '../../utils/TextUtils';

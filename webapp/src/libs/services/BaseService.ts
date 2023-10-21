@@ -12,14 +12,10 @@ interface ServiceRequest {
 
 const noResponseBodyStatusCodes = [202, 204];
 
-export const BackendServiceUrl =
-    process.env.REACT_APP_BACKEND_URI == null || process.env.REACT_APP_BACKEND_URI.trim() === ''
-        ? window.origin
-        : process.env.REACT_APP_BACKEND_URI;
-export const NetworkErrorMessage = '\n\nPlease check that your backend is running and that it is accessible by the app';
+export const BackendServiceUrl = process.env.REACT_APP_BACKEND_URI ?? window.origin;
 
 export class BaseService {
-    constructor(protected readonly serviceUrl: string = BackendServiceUrl) {}
+    constructor(protected readonly serviceUrl: string = BackendServiceUrl) { }
 
     protected readonly getResponseAsync = async <T>(
         request: ServiceRequest,
@@ -33,8 +29,8 @@ export class BaseService {
         const headers = new Headers(
             accessToken
                 ? {
-                      Authorization: `Bearer ${accessToken}`,
-                  }
+                    Authorization: `Bearer ${accessToken}`,
+                }
                 : undefined,
         );
 

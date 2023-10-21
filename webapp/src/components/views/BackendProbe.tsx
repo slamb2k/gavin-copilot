@@ -1,12 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 
-import { useMsal } from '@azure/msal-react';
 import { Body1, Spinner, Title3 } from '@fluentui/react-components';
-import { FC, useEffect, useMemo, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { renderApp } from '../../index';
 import { AuthHelper } from '../../libs/auth/AuthHelper';
-import { BackendServiceUrl, NetworkErrorMessage } from '../../libs/services/BaseService';
-import { MaintenanceService, MaintenanceStatus } from '../../libs/services/MaintenanceService';
+import { BackendServiceUrl } from '../../libs/services/BaseService';
 import { useAppDispatch, useAppSelector } from '../../redux/app/hooks';
 import { RootState } from '../../redux/app/store';
 import { setMaintenance } from '../../redux/features/app/appSlice';
@@ -16,12 +14,18 @@ interface IData {
     onBackendFound: () => void;
 }
 
+interface IMaintenance {
+    title: string | null;
+    message: string | null;
+    note: string | null | undefined;
+}
+
 export const BackendProbe: FC<IData> = ({ onBackendFound }) => {
     const classes = useSharedClasses();
     const dispatch = useAppDispatch();
     const { isMaintenance } = useAppSelector((state: RootState) => state.app);
-    const maintenanceService = useMemo(() => new MaintenanceService(), []);
-    const { instance, inProgress } = useMsal();
+    const healthUrl = new URL('healthz', BackendServiceUrl);
+    const migrationUrl = new URL('maintenanceStatus', BackendServiceUrl);
 
     const [model, setModel] = useState<MaintenanceStatus | null>(null);
 
@@ -37,27 +41,39 @@ export const BackendProbe: FC<IData> = ({ onBackendFound }) => {
                 }
             };
 
-            AuthHelper.getSKaaSAccessToken(instance, inProgress)
-                .then((token) =>
-                    maintenanceService
-                        .getMaintenanceStatus(token)
-                        .then((data) => {
-                            // Body has payload. This means the app is in maintenance
-                            setModel(data);
-                        })
-                        .catch((e: any) => {
-                            if (e instanceof Error && e.message.includes(NetworkErrorMessage)) {
-                                // a network error was encountered, so we should probe until we find the backend:
-                                return;
-                            }
+            const fetchHealthAsync = async () => {
+                const result = await fetch(healthUrl);
 
-                            // JSON Exception since response has no body. This means app is not in maintenance.
-                            dispatch(setMaintenance(false));
-                            onBackendFoundWithAuthCheck();
-                        }),
-                )
+                if (result.ok) {
+                    onBackendFoundWithAuthCheck();
+                }
+            };
+
+            const fetchMaintenanceAsync = () =>
+                fetch(migrationUrl)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        // Body has payload. This means the app is in maintenance
+                        setModel(data as IMaintenance);
+                        return false;
+                    })
+                    .catch((e: any) => {
+                        if (e instanceof TypeError) {
+                            // fetch() will reject with a TypeError when a network error is encountered
+                            // this means the backend is not found and we need to probe.
+                            return true;
+                        }
+
+                        // JSON Exception since response has no body. This means app is not in maintenance.
+                        dispatch(setMaintenance(false));
+                        onBackendFoundWithAuthCheck();
+                        return false;
+                    });
+
+            fetchMaintenanceAsync()
+                .then((shouldProbe) => (shouldProbe ? fetchHealthAsync() : Promise.resolve()))
                 .catch(() => {
-                    // Ignore - we'll retry on the next interval
+                    // Ignore - this page is just a probe, so we don't need to show any errors if backend is not found
                 });
         }, 3000);
 

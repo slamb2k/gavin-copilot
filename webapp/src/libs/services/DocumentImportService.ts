@@ -57,14 +57,14 @@ export class DocumentImportService extends BaseService {
     public downloadCitedDocument = async (
         citation: Citation,
         openFile = true,
-        accessToken: string,        
+        accessToken: string,
     ): Promise<void> => {
         const payload = {
             Link: citation.link,
             SourceName: citation.sourceName,
             SourceContentType: citation.sourceContentType,
         };
-        
+
         try {
             const requestUrl = new URL("documents/getcitation", this.serviceUrl);
             await fetch(requestUrl, {
@@ -75,16 +75,15 @@ export class DocumentImportService extends BaseService {
                 },
                 body: JSON.stringify(payload)
             })
-            .then(response => response.blob())
+                .then(response => response.blob())
                 .then(blob => {
-                
-                const blobURL = URL.createObjectURL(blob);
-                
+
+                    const blobURL = URL.createObjectURL(blob);
+
                     if (openFile) {
                         window.open(blobURL);
                     }
-                    else
-                    {
+                    else {
                         const link = document.createElement('a');
                         link.href = blobURL;
                         link.download = citation.sourceName;
@@ -93,9 +92,9 @@ export class DocumentImportService extends BaseService {
                         link.click();
                         link.parentNode?.removeChild(link);
                     }
-                    
+
                     URL.revokeObjectURL(blobURL);
-            });             
+                });
         } catch (e: any) {
             let additionalErrorMsg = '';
             if (e instanceof TypeError) {

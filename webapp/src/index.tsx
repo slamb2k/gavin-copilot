@@ -1,4 +1,4 @@
-import { PublicClientApplication } from '@azure/msal-browser';
+import { AccountInfo, PublicClientApplication } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
 import ReactDOM from 'react-dom/client';
 import { Provider as ReduxProvider } from 'react-redux';
@@ -42,9 +42,7 @@ export function renderApp() {
                 if (!msalInstance) {
                     msalInstance = new PublicClientApplication(AuthHelper.getMsalConfig(authConfig));
                     void msalInstance.handleRedirectPromise().then((response) => {
-                        if (response) {
-                            msalInstance?.setActiveAccount(response.account);
-                        }
+                        msalInstance?.setActiveAccount(response?.account as AccountInfo | null);
                     });
                 }
 

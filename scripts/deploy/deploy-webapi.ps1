@@ -27,12 +27,12 @@ param(
     $PackageFilePath = "$PSScriptRoot/out/webapi.zip",
 
     [switch]
-    # Don't attempt to add our URIs in frontend app registration's redirect URIs
-    $SkipAppRegistration,
+    # Switch to add our URIs in app registration's redirect URIs if missing
+    $EnsureUriInAppRegistration,
     
     [switch]
-    # Don't attempt to add our URIs in CORS origins for our plugins
-    $SkipCorsRegistration
+    # Switch to add our URIs in CORS origins for our plugins
+    $RegisterPluginCors
 )
 
 # Ensure $PackageFilePath exists
@@ -53,7 +53,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Getting Azure WebApp resource name..."
-$deployment=$(az deployment group show --name $DeploymentName --resource-group $ResourceGroupName --output json | ConvertFrom-Json)
+$deployment = $(az deployment group show --name $DeploymentName --resource-group $ResourceGroupName --output json | ConvertFrom-Json)
 $webApiUrl = $deployment.properties.outputs.webapiUrl.value
 $webApiName = $deployment.properties.outputs.webapiName.value
 $pluginNames = $deployment.properties.outputs.pluginNames.value
@@ -107,7 +107,7 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-if (-Not $SkipAppRegistration) {
+if ($EnsureUriInAppRegistration) {
     $webapiSettings = $(az webapp config appsettings list --name $webapiName --resource-group $ResourceGroupName | ConvertFrom-JSON)
     $frontendClientId = ($webapiSettings | Where-Object -Property name -EQ -Value Frontend:AadClientId).value
     $objectId = (az ad app show --id $frontendClientId | ConvertFrom-Json).id
@@ -137,13 +137,12 @@ if (-Not $SkipAppRegistration) {
             --headers 'Content-Type=application/json' `
             --body $body
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "Failed to update AAD app registration - Use -SkipAppRegistration switch to skip this step"
             exit $LASTEXITCODE
         }
     }
 }
 
-if (-Not $SkipCorsRegistration) {
+if ($RegisterPluginCors) {
     foreach ($pluginName in $pluginNames) {
         $allowedOrigins = $((az webapp cors show --name $pluginName --resource-group $ResourceGroupName --subscription $Subscription | ConvertFrom-Json).allowedOrigins)
         foreach ($address in $origins) {
@@ -151,10 +150,6 @@ if (-Not $SkipCorsRegistration) {
             Write-Host "Ensuring '$origin' is included in CORS origins for plugin '$pluginName'..."
             if (-not $allowedOrigins -contains $origin) {
                 az webapp cors add --name $pluginName --resource-group $ResourceGroupName --subscription $Subscription --allowed-origins $origin
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Host "Failed to update plugin CORS URIs - Use -SkipCorsRegistration switch to skip this step"
-                    exit $LASTEXITCODE
-                }
             }
         }
     }

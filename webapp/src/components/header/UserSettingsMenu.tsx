@@ -56,7 +56,6 @@ export const UserSettingsMenu: FC<IUserSettingsProps> = ({ setLoadingState }) =>
     return (
         <>
             {AuthHelper.isAuthAAD() ? (
-                isAuthenticated ? (
                 <Menu>
                     <MenuTrigger disableButtonEnhancement>
                         {
