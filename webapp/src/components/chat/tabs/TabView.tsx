@@ -23,7 +23,7 @@ interface ITabViewProps {
     children?: React.ReactNode;
 }
 
-export const TabView: React.FC<ITabViewProps> = ({ title, learnMoreDescription, learnMoreLink, children }) => {
+export const TabView: React.FC<ITabViewProps> = ({ title, children }) => {
     const classes = useClasses();
 
     return (
