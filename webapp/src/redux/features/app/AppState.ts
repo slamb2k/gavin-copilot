@@ -74,17 +74,20 @@ export enum FeatureKeys {
 
 export const Features = {
     [FeatureKeys.DarkMode]: {
-        enabled: false,
+        enabled: true,
         label: 'Dark Mode',
+        inactive: true,
     },
     [FeatureKeys.SimplifiedExperience]: {
         enabled: true,
         label: 'Simplified Chat Experience',
+        inactive: true,
     },
     [FeatureKeys.PluginsPlannersAndPersonas]: {
-        enabled: true,
+        enabled: false,
         label: 'Plugins & Planners & Personas',
         description: 'The Plans and Persona tabs are hidden until you turn this on',
+        inactive: true,
     },
     [FeatureKeys.AzureContentSafety]: {
         enabled: false,
@@ -99,6 +102,7 @@ export const Features = {
     [FeatureKeys.BotAsDocs]: {
         enabled: false,
         label: 'Export Chat Sessions',
+        inactive: true,
     },
     [FeatureKeys.MultiUserChat]: {
         enabled: false,
@@ -106,10 +110,11 @@ export const Features = {
         description: 'Enable multi-user chat sessions. Not available when authorization is disabled.',
     },
     [FeatureKeys.RLHF]: {
-        enabled: false,
+        enabled: true,
         label: 'Reinforcement Learning from Human Feedback',
         description: 'Enable users to vote on model-generated responses. For demonstration purposes only.',
         // TODO: [Issue #42] Send and store feedback in backend
+        inactive: true,
     },
 };
 

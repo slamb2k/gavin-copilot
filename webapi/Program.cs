@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -61,7 +62,7 @@ public sealed class Program
         // Add AppInsights telemetry
         builder.Services
             .AddHttpContextAccessor()
-            .AddApplicationInsightsTelemetry(options => { options.ConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]; })
+            .AddApplicationInsightsTelemetry()
             .AddSingleton<ITelemetryInitializer, AppInsightsUserTelemetryInitializerService>()
             .AddLogging(logBuilder => logBuilder.AddApplicationInsights())
             .AddSingleton<ITelemetryService, AppInsightsTelemetryService>();
@@ -108,6 +109,13 @@ public sealed class Program
                 appBuilder =>
                     appBuilder.Run(
                         async context => await Task.Run(() => context.Response.Redirect("/swagger"))));
+
+            // Enable config debug endpoint for development environments.
+            app.MapGet("/debug-config", () =>
+            {
+                var config = builder.Configuration.GetDebugView();
+                return config;
+            });
         }
 
         // Start the service

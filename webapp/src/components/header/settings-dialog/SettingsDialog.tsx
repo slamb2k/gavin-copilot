@@ -16,10 +16,9 @@ import {
     DialogTitle,
     DialogTrigger,
     Divider,
-    Label,
     makeStyles,
     shorthands,
-    tokens,
+    tokens
 } from '@fluentui/react-components';
 import React from 'react';
 import { useAppSelector } from '../../../redux/app/hooks';
@@ -105,6 +104,7 @@ export const SettingsDialog: React.FC<ISettingsDialogProps> = ({ open, closeDial
                                         Frontend version: {process.env.REACT_APP_SK_VERSION ?? '-'}
                                         <br />
                                         {process.env.REACT_APP_SK_BUILD_INFO}
+                                        <br />
                                     </Body1>
                                 </AccordionPanel>
                             </AccordionItem>
@@ -113,12 +113,12 @@ export const SettingsDialog: React.FC<ISettingsDialogProps> = ({ open, closeDial
                     </DialogContent>
                 </DialogBody>
                 <DialogActions position="start" className={dialogClasses.footer}>
-                    <Label size="small" color="brand" className={classes.footer}>
+                    {/* <Label size="small" color="brand" className={classes.footer}>
                         Join the Semantic Kernel open source community!{' '}
                         <a href="https://aka.ms/semantic-kernel" target="_blank" rel="noreferrer">
                             Learn More
                         </a>
-                    </Label>
+                    </Label> */}
                     <DialogTrigger disableButtonEnhancement>
                         <Button appearance="secondary" data-testid="userSettingsCloseButton">
                             Close

@@ -120,6 +120,7 @@ export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = ({ message, messa
     //     ? { idForColor: selectedId, color: 'colorful' }
     //     : { name: fullName, color: 'colorful' };
 
+    // Treating the bot as a user UI wise
     const avatar: AvatarProps = isDefaultUser
         ? { idForColor: selectedId, color: 'colorful' }
         : { name: fullName, color: 'colorful' };

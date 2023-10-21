@@ -233,9 +233,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ isDraggingOver, onDragLeav
                         }}
                     />
                     <Button
-                        disabled={
-                            conversations[selectedId].disabled || (importingDocuments && importingDocuments.length > 0)
-                        }
+                        // disabled={
+                        //     conversations[selectedId].disabled || (importingDocuments && importingDocuments.length > 0)
+                        // }
+                        disabled={true}
                         appearance="transparent"
                         icon={<AttachRegular />}
                         onClick={() => documentFileRef.current?.click()}
