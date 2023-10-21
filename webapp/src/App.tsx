@@ -2,9 +2,11 @@
 
 import { AuthenticatedTemplate, UnauthenticatedTemplate, useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { FluentProvider, Image, makeStyles, shorthands, tokens } from '@fluentui/react-components';
+import 'react-tooltip/dist/react-tooltip.css';
 
 import * as React from 'react';
 import { useEffect } from 'react';
+import { Tooltip } from "react-tooltip";
 import { LogoSection } from './components/header/LogoSection';
 import { UserSettingsMenu } from './components/header/UserSettingsMenu';
 import { PluginGallery } from './components/open-api-plugins/PluginGallery';
@@ -17,7 +19,7 @@ import { FeatureKeys } from './redux/features/app/AppState';
 import { setActiveUserInfo, setServiceInfo } from './redux/features/app/appSlice';
 import { semanticKernelDarkTheme, semanticKernelLightTheme } from './styles';
 
-import headerBackground from './assets/gavin-carpark.png';
+import headerBackground from './assets/gavin-header.png';
 import msOpenAILogo from './assets/ms-openai-logo.png';
 
 export const useClasses = makeStyles({
@@ -25,7 +27,6 @@ export const useClasses = makeStyles({
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
-        width: '100%',
         ...shorthands.overflow('hidden'),
     },
     header: {
@@ -33,10 +34,14 @@ export const useClasses = makeStyles({
         flexDirection: 'row',
         justifyContent: 'space-between',  
         backgroundImage: `url(${headerBackground})`,
-        height: '14vh'        
+        backgroundRepeat: 'no-repeat',
+        height: '14vh',
+        backgroundSize: 'cover',
+        backgroundColor: 'black',
     },
     headerLeft: {
         display: 'flex',
+        flexShrink: '0',
     },
     headerRight: {
         display: 'flex',
@@ -78,6 +83,8 @@ enum AppState {
     Chat,
     SigningOut,
 }
+
+// const midJourneyPrompt = "Midjourney Prompt: A photograph of a lonely cyborg wandering around a carpark late at night, trying to remember where he parked his car. Ensure the main subject of the image is on the right side of the shot and isn't too far away. --ar 16:9 --v 5.2 --style raw"
 
 const App = () => {
     const classes = useClasses();
@@ -216,7 +223,13 @@ const Chat = ({
     }, [setAppState]);
     return (
         <div className={classes.container}>
-            <div className={classes.header}>
+            <div className={classes.header} data-tooltip-id='headerTooltip' data-tooltip-place="top">
+                <Tooltip id="headerTooltip" place="left-start" style={{ width: '300px' }}>
+                    <div>
+                        <h3>Midjourney Prompt</h3>
+                        <p>A photograph of a lonely cyborg wandering around a carpark late at night, trying to remember where he parked his car. Ensure the main subject of the image is on the left side of the shot and is not too far away. --ar 16:9 --v 5.2 --style raw</p>
+                    </div>
+                </Tooltip>
                 <div className={classes.headerLeft}>
                     <LogoSection />
                 </div>
