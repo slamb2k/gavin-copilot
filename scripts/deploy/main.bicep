@@ -508,6 +508,42 @@ resource appServiceMemoryPipeline 'Microsoft.Web/sites@2022-09-01' = {
   }
 }
 
+module appServiceMemoryPipelineDnsModule 'modules/verifyAzureDns.bicep' = if (memoryPipelineCustomUrl != '') {
+  name: 'app-${deployment().name}-memorypipeline-dns-verify'
+  scope: resourceGroup('rg-shared')
+  params: {
+    cnameRecord: memoryPipelineCustomHost
+    dnsZoneName: dnsZoneName
+    targetHostname: appServiceMemoryPipeline.properties.defaultHostName
+    validationToken: appServiceMemoryPipeline.properties.customDomainVerificationId
+  }
+}
+
+// hostname bindings must be deployed one by one to prevent Conflict (HTTP 429) errors.
+resource appServiceMemoryPipelineHostname 'Microsoft.web/sites/hostnameBindings@2019-08-01' = if (!empty(memoryPipelineCustomUrl)) {
+  name: !empty(memoryPipelineCustomUrl) ? memoryPipelineCustomUrl : 'memorypipeline.domain.com'
+  properties: {
+    siteName: appServiceMemoryPipeline.name
+    hostNameType: 'Verified'
+    sslState: 'Disabled'
+  }
+  parent: appServiceMemoryPipeline
+  dependsOn: [ appServiceMemoryPipelineDnsModule ]
+}
+
+// certificates must be bound via module/nested template, because each resource can only occur once in every template
+// in this case the hostnameBindings would occur twice otherwise.
+module appServiceMemoryPipelineHostnameCertBindings 'modules/bindCertificateToHostname.bicep' = if (memoryPipelineCustomUrl != '') {
+  name: 'app-${deployment().name}-memorypipeline-ssl'
+  params: {
+    appServicePlanResourceId: appServicePlan.id
+    customHostnames: [ memoryPipelineCustomUrl ]
+    location: location
+    webAppName: appServiceMemoryPipeline.name
+  }
+  dependsOn: [ appServiceMemoryPipelineHostname ]
+}
+
 resource appServiceMemoryPipelineConfig 'Microsoft.Web/sites/config@2022-09-01' = {
   parent: appServiceMemoryPipeline
   name: 'web'
@@ -1196,7 +1232,7 @@ resource bingSearchService 'Microsoft.Bing/accounts@2020-06-10' = if (deployWebS
   kind: 'Bing.Search.v7'
 }
 
-output webapiUrl string = appServiceWeb.properties.defaultHostName
+output webapiUrl string = (webapiCustomUrl != '') ? webapiCustomUrl : appServiceWeb.properties.defaultHostName
 output webapiName string = appServiceWeb.name
 output memoryPipelineName string = appServiceMemoryPipeline.name
 output pluginNames array = concat(

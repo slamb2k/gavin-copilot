@@ -24,7 +24,7 @@ jobs:
     uses: ./.github/workflows/copilot-build-plugins.yml
 
   integration:
-    needs: [build-webapi, build-memorypipeline, build-plugins, build-plugins]
+    needs: [build-webapi, build-memorypipeline, build-plugins]
     uses: ./.github/workflows/copilot-deploy-environment.yml
     with:
       ENVIRONMENT: integration
