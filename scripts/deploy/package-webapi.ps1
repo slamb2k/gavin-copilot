@@ -78,7 +78,7 @@ if (-Not $SkipFrontendFiles) {
     Add-Content -Path $filePath -Value "REACT_APP_SK_BUILD_INFO=$InformationalVersion"
 
     Write-Host "Installing yarn dependencies..."
-    yarn install
+    yarn install --network-timeout 100000
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }
