@@ -2,7 +2,7 @@
 
 import { FC, useCallback, useState } from 'react';
 
-import { useIsAuthenticated, useMsal } from '@azure/msal-react';
+import { useMsal } from '@azure/msal-react';
 import {
     Avatar,
     Button,
@@ -17,7 +17,7 @@ import {
     shorthands,
     tokens,
 } from '@fluentui/react-components';
-import { Person24Filled, Settings24Regular } from '@fluentui/react-icons';
+import { Settings24Regular } from '@fluentui/react-icons';
 import { AuthHelper } from '../../libs/auth/AuthHelper';
 import { useAppSelector } from '../../redux/app/hooks';
 import { RootState, resetState } from '../../redux/app/store';
@@ -41,7 +41,6 @@ interface IUserSettingsProps {
 export const UserSettingsMenu: FC<IUserSettingsProps> = ({ setLoadingState }) => {
     const classes = useClasses();
     const { instance } = useMsal();
-    const isAuthenticated = useIsAuthenticated();
 
     const { activeUserInfo, features } = useAppSelector((state: RootState) => state.app);
 
@@ -102,14 +101,14 @@ export const UserSettingsMenu: FC<IUserSettingsProps> = ({ setLoadingState }) =>
                         </MenuList>
                     </MenuPopover>
                     </Menu>
-                ) : (
-                    <Avatar
-                        className={classes.root}
-                        size={36}
-                        icon={<Person24Filled />}
-                        color='neutral'
-                    />
-                )
+                // ) : (
+                //     <Avatar
+                //         className={classes.root}
+                //         size={36}
+                //         icon={<Person24Filled />}
+                //         color='neutral'
+                //     />
+                // )
             ) : (
                 <Button
                     data-testid="settingsButtonWithoutAuth"

@@ -8,26 +8,29 @@ usage() {
     echo "Usage: $0 -d DEPLOYMENT_NAME -s SUBSCRIPTION -c BACKEND_CLIENT_ID -fc FRONTEND_CLIENT_ID -t AZURE_AD_TENANT_ID -ai AI_SERVICE_TYPE [OPTIONS]"
     echo ""
     echo "Arguments:"
-    echo "  -d, --deployment-name DEPLOYMENT_NAME      Name for the deployment (mandatory)"
-    echo "  -s, --subscription SUBSCRIPTION            Subscription to which to make the deployment (mandatory)"
-    echo "  -c, --client-id BACKEND_CLIENT_ID          Azure AD client ID for the Web API backend app registration (mandatory)"
-    echo "  -fc, --frontend-client-id FE_CLIENT_ID     Azure AD client ID for the frontend app registration (mandatory)"
-    echo "  -t, --tenant-id AZURE_AD_TENANT_ID         Azure AD tenant ID for authenticating users (mandatory)"
-    echo "  -ai, --ai-service AI_SERVICE_TYPE          Type of AI service to use (i.e., OpenAI or AzureOpenAI) (mandatory)"
-    echo "  -aiend, --ai-endpoint AI_ENDPOINT          Endpoint for existing Azure OpenAI resource"
-    echo "  -aikey, --ai-service-key AI_SERVICE_KEY    API key for existing Azure OpenAI resource or OpenAI account"
-    echo "  -rg, --resource-group RESOURCE_GROUP       Resource group to which to make the deployment (default: \"rg-\$DEPLOYMENT_NAME\")"
-    echo "  -r, --region REGION                        Region to which to make the deployment (default: \"South Central US\")"
-    echo "  -a, --app-service-sku WEB_APP_SVC_SKU      SKU for the Azure App Service plan (default: \"B1\")"
-    echo "  -i, --instance AZURE_AD_INSTANCE           Azure AD cloud instance for authenticating users"
-    echo "                                             (default: \"https://login.microsoftonline.com\")"
-    echo "  -ms, --memory-store                        Method to use to persist embeddings. Valid values are"
-    echo "                                             \"AzureCognitiveSearch\" (default) and \"Qdrant\""
-    echo "  -nc, --no-cosmos-db                        Don't deploy Cosmos DB for chat storage - Use volatile memory instead"
-    echo "  -ns, --no-speech-services                  Don't deploy Speech Services to enable speech as chat input"
-    echo "  -ws, --deploy-web-searcher-plugin          Deploy the web searcher plugin"
-    echo "  -dd, --debug-deployment                    Switches on verbose template deployment output"
-    echo "  -ndp, --no-deploy-package                  Skips deploying binary packages to cloud when set."
+    echo "  -d, --deployment-name DEPLOYMENT_NAME                   Name for the deployment (mandatory)"
+    echo "  -s, --subscription SUBSCRIPTION                         Subscription to which to make the deployment (mandatory)"
+    echo "  -c, --client-id BACKEND_CLIENT_ID                       Azure AD client ID for the Web API backend app registration (mandatory)"
+    echo "  -fc, --frontend-client-id FE_CLIENT_ID                  Azure AD client ID for the frontend app registration (mandatory)"
+    echo "  -t, --tenant-id AZURE_AD_TENANT_ID                      Azure AD tenant ID for authenticating users (mandatory)"
+    echo "  -ai, --ai-service AI_SERVICE_TYPE                       Type of AI service to use (i.e., OpenAI or AzureOpenAI) (mandatory)"
+    echo "  -aiend, --ai-endpoint AI_ENDPOINT                       Endpoint for existing Azure OpenAI resource"
+    echo "  -aikey, --ai-service-key AI_SERVICE_KEY                 API key for existing Azure OpenAI resource or OpenAI account"
+    echo "  -rg, --resource-group RESOURCE_GROUP                    Resource group to which to make the deployment (default: \"rg-\$DEPLOYMENT_NAME\")"
+    echo "  -r, --region REGION                                     Region to which to make the deployment (default: \"South Central US\")"
+    echo "  -a, --app-service-sku WEB_APP_SVC_SKU                   SKU for the Azure App Service plan (default: \"B1\")"
+    echo "  -i, --instance AZURE_AD_INSTANCE                        Azure AD cloud instance for authenticating users"
+    echo "                                                          (default: \"https://login.microsoftonline.com\")"
+    echo "  -ms, --memory-store                                     Method to use to persist embeddings. Valid values are"
+    echo "                                                          \"AzureCognitiveSearch\" (default) and \"Qdrant\""
+    echo "  -wapich, --web-api-custom-host WEB_API_CUSTOM_HOST  	Optional custom host for the web api (e.g. XXX.<dns zone>)"
+    echo "  -memch, --memory-custom-host MEMORY_CUSTOM_HOST     	Optional custom host for the memory pipeline (e.g. XXX.<dns zone>)"
+    echo "  -cdzone, --custom-domain-zone CUSTOM_DOMAIN_ZONE        Optional custom name of the DNS zone (e.g. example.com)"
+    echo "  -nc, --no-cosmos-db                                     Don't deploy Cosmos DB for chat storage - Use volatile memory instead"
+    echo "  -ns, --no-speech-services                               Don't deploy Speech Services to enable speech as chat input"
+    echo "  -ws, --deploy-web-searcher-plugin                       Deploy the web searcher plugin"
+    echo "  -dd, --debug-deployment                                 Switches on verbose template deployment output"
+    echo "  -ndp, --no-deploy-package                               Skips deploying binary packages to cloud when set."
 }
 
 # Parse arguments
@@ -81,6 +84,21 @@ while [[ $# -gt 0 ]]; do
         ;;
     -r | --region)
         REGION="$2"
+        shift
+        shift
+        ;;
+    -wapicd | --web-api-custom-domain)
+        WEB_API_CUSTOM_HOST="$2"
+        shift
+        shift
+        ;;
+    -memcd | --memory-custom-domain)
+        MEMORY_CUSTOM_HOST="$2"
+        shift
+        shift
+        ;;
+    -cdzone | --custom-domain-zone)
+        CUSTOM_DOMAIN_ZONE="$2"
         shift
         shift
         ;;
@@ -196,13 +214,14 @@ JSON_CONFIG=$(
     "webAppServiceSku": { "value": "$WEB_APP_SVC_SKU" },
     "aiService": { "value": "$AI_SERVICE_TYPE" },
     "aiApiKey": { "value": "$AI_SERVICE_KEY" },
-    "deployWebApiPackage": { "value": $([ "$NO_DEPLOY_PACKAGE" = true ] && echo "false" || echo "true") },
-    "deployMemoryPipelinePackage": { "value": $([ "$NO_DEPLOY_PACKAGE" = true ] && echo "false" || echo "true") },
-    "deployWebSearcherPackage": { "value": $([ "$NO_DEPLOY_PACKAGE" = true ] && echo "false" || echo "true") },
+    "deployPackages": { "value": $([ "$NO_DEPLOY_PACKAGE" = true ] && echo "false" || echo "true") },
     "aiEndpoint": { "value": "$([ ! -z "$AI_ENDPOINT" ] && echo "$AI_ENDPOINT")" },
     "azureAdInstance": { "value": "$AZURE_AD_INSTANCE" },
     "azureAdTenantId": { "value": "$AZURE_AD_TENANT_ID" },
     "webApiClientId": { "value": "$BACKEND_CLIENT_ID" },
+    "webapiCustomHost": { "value": "$WEB_API_CUSTOM_HOST" },
+    "memoryPipelineCustomHost": { "value": "$MEMORY_CUSTOM_HOST" },
+    "dnsZoneName": { "value": "$CUSTOM_DOMAIN_ZONE" },    
     "frontendClientId": { "value": "$FRONTEND_CLIENT_ID" },
     "deployNewAzureOpenAI": { "value": $([ "$NO_NEW_AZURE_OPENAI" = true ] && echo "false" || echo "true") },
     "memoryStore": { "value": "$MEMORY_STORE" },

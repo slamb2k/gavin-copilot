@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -21,6 +22,8 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticMemory;
+using Microsoft.SemanticMemory.ContentStorage;
+using Microsoft.SemanticMemory.Diagnostics;
 
 namespace CopilotChat.WebApi.Controllers;
 
@@ -113,6 +116,40 @@ public class DocumentController : ControllerBase
         [FromForm] DocumentImportForm documentImportForm)
     {
         return this.DocumentImportAsync(memoryClient, messageRelayHubContext, DocumentScopes.Chat, chatId, documentImportForm);
+    }
+
+    [Route("documents/getcitation")]
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DocumentDownload(
+        [FromServices] IContentStorage contentStorage,
+        [FromBody] CitationSource citation)
+    {
+        try
+        {
+            var blobId = citation.Link.Split('/').FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(blobId))
+            {
+                return this.Ok("Unable to retrieve document");
+            }
+
+            BinaryData fileContent = await (contentStorage.ReadFileAsync(this._promptOptions.MemoryIndexName, blobId, citation.SourceName, false)
+                .ConfigureAwait(false));
+
+            if (fileContent == null)
+            {
+                return this.Ok("Unable to retrieve document");
+            }
+
+            var contentStream = fileContent.ToStream();
+            return this.File(contentStream, citation.SourceContentType, citation.SourceName);
+        }
+        catch (ContentStorageFileNotFoundException)
+        {
+            return this.Ok("No documents found");
+        }
     }
 
     private async Task<IActionResult> DocumentImportAsync(

@@ -1,10 +1,14 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
+using System.Diagnostics;
 using CopilotChat.Shared;
+using Microsoft.ApplicationInsights.Extensibility.Implementation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticMemory;
 using Microsoft.SemanticMemory.Diagnostics;
@@ -23,7 +27,12 @@ ISemanticMemoryClient memory =
 
 builder.Services.AddSingleton(memory);
 
-builder.Services.AddApplicationInsightsTelemetry();
+// Add AppInsights telemetry
+builder.Services
+    .AddApplicationInsightsTelemetry()
+    .AddLogging(logBuilder => logBuilder.AddApplicationInsights());
+
+TelemetryDebugWriter.IsTracingDisabled = Debugger.IsAttached;
 
 var app = builder.Build();
 
@@ -41,6 +50,16 @@ app.MapGet("/", () =>
     }
     return Results.Ok(message);
 });
+
+// Enable config debug endpoint for development environments.
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/debug-config", () =>
+    {
+        var config = builder.Configuration.GetDebugView();
+        return config;
+    });
+}
 
 // ********************************************************
 // ************** START ***********************************

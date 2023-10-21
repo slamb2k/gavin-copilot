@@ -251,19 +251,7 @@ const Chat = ({
                     </div>
                 )}
             </div>
-            {appState === AppState.ProbeForBackend && (
-                <BackendProbe
-                    onBackendFound={() => {
-                        setAppState(
-                            AuthHelper.isAuthAAD()
-                                ? // if AAD is enabled, we need to set the active account before loading chats
-                                  AppState.SettingUserInfo
-                                : // otherwise, we can load chats immediately
-                                  AppState.LoadingChats,
-                        );
-                    }}
-                />
-            )}
+            {appState === AppState.ProbeForBackend && <BackendProbe onBackendFound={onBackendFound} />}
             {appState === AppState.SettingUserInfo && (
                 <Loading text={'Hang tight while we fetch your information...'} />
             )}

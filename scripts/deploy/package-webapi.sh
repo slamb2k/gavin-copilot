@@ -65,11 +65,11 @@ while [[ $# -gt 0 ]]; do
         NO_ZIP=true
         shift
         ;;
-    -s | --skip-frontend)
+    -s|--skip-frontend)
         SKIP_FRONTEND=true
         shift
         ;;
-    *)
+        *)
         echo "Unknown option $1"
         usage
         exit 1
@@ -77,7 +77,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo "Building backend executables..."
+echo  "Building backend executables..."
 
 # Set defaults
 : "${CONFIGURATION:="Release"}"
@@ -118,6 +118,15 @@ if [[ -z "$SKIP_FRONTEND" ]]; then
     echo "Building static frontend files..."
 
     pushd "$SCRIPT_ROOT/../../webapp"
+
+    filePath="./.env.production"
+    if [ -f "$filePath" ]; then
+        rm "$filePath"
+    fi
+
+    echo "REACT_APP_BACKEND_URI=" >> "$filePath"
+    echo "REACT_APP_SK_VERSION=$Version" >> "$filePath"
+    echo "REACT_APP_SK_BUILD_INFO=$InformationalVersion" >> "$filePath"
 
     echo "Installing yarn dependencies..."
     yarn install
