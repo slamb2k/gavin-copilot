@@ -23,14 +23,14 @@ usage() {
     echo "                                                          (default: \"https://login.microsoftonline.com\")"
     echo "  -ms, --memory-store                                     Method to use to persist embeddings. Valid values are"
     echo "                                                          \"AzureCognitiveSearch\" (default) and \"Qdrant\""
-    echo "  -wapich, --web-api-custom-host WEB_API_CUSTOM_HOST  	Optional custom host for the web api (e.g. XXX.<dns zone>)"
-    echo "  -memch, --memory-custom-host MEMORY_CUSTOM_HOST     	Optional custom host for the memory pipeline (e.g. XXX.<dns zone>)"
-    echo "  -cdzone, --custom-domain-zone CUSTOM_DOMAIN_ZONE        Optional custom name of the DNS zone (e.g. example.com)"
     echo "  -nc, --no-cosmos-db                                     Don't deploy Cosmos DB for chat storage - Use volatile memory instead"
     echo "  -ns, --no-speech-services                               Don't deploy Speech Services to enable speech as chat input"
     echo "  -ws, --deploy-web-searcher-plugin                       Deploy the web searcher plugin"
     echo "  -dd, --debug-deployment                                 Switches on verbose template deployment output"
     echo "  -ndp, --no-deploy-package                               Skips deploying binary packages to cloud when set."
+    echo "  -wapich, --web-api-custom-host WEB_API_CUSTOM_HOST  	Optional custom host for the web api (e.g. XXX.<dns zone>)"
+    echo "  -memch, --memory-custom-host MEMORY_CUSTOM_HOST     	Optional custom host for the memory pipeline (e.g. XXX.<dns zone>)"
+    echo "  -cdzone, --custom-domain-zone CUSTOM_DOMAIN_ZONE        Optional custom name of the DNS zone (e.g. example.com)"
 }
 
 # Parse arguments
@@ -87,6 +87,16 @@ while [[ $# -gt 0 ]]; do
         shift
         shift
         ;;
+    -a | --app-service-sku)
+        WEB_APP_SVC_SKU="$2"
+        shift
+        shift
+        ;;
+    -i | --instance)
+        AZURE_AD_INSTANCE="$2"
+        shift
+        shift
+        ;;
     -wapicd | --web-api-custom-domain)
         WEB_API_CUSTOM_HOST="$2"
         shift
@@ -101,17 +111,7 @@ while [[ $# -gt 0 ]]; do
         CUSTOM_DOMAIN_ZONE="$2"
         shift
         shift
-        ;;
-    -a | --app-service-sku)
-        WEB_APP_SVC_SKU="$2"
-        shift
-        shift
-        ;;
-    -i | --instance)
-        AZURE_AD_INSTANCE="$2"
-        shift
-        shift
-        ;;
+        ;;        
     -ms | --memory-store)
         MEMORY_STORE=="$2"
         shift
@@ -219,15 +219,15 @@ JSON_CONFIG=$(
     "azureAdInstance": { "value": "$AZURE_AD_INSTANCE" },
     "azureAdTenantId": { "value": "$AZURE_AD_TENANT_ID" },
     "webApiClientId": { "value": "$BACKEND_CLIENT_ID" },
-    "webapiCustomHost": { "value": "$WEB_API_CUSTOM_HOST" },
-    "memoryPipelineCustomHost": { "value": "$MEMORY_CUSTOM_HOST" },
-    "dnsZoneName": { "value": "$CUSTOM_DOMAIN_ZONE" },    
     "frontendClientId": { "value": "$FRONTEND_CLIENT_ID" },
     "deployNewAzureOpenAI": { "value": $([ "$NO_NEW_AZURE_OPENAI" = true ] && echo "false" || echo "true") },
     "memoryStore": { "value": "$MEMORY_STORE" },
     "deployCosmosDB": { "value": $([ "$NO_COSMOS_DB" = true ] && echo "false" || echo "true") },
     "deploySpeechServices": { "value": $([ "$NO_SPEECH_SERVICES" = true ] && echo "false" || echo "true") },
     "deployWebSearcherPlugin": { "value": $([ "$DEPLOY_WEB_SEARCHER_PLUGIN" = true ] && echo "true" || echo "false") }
+    "webapiCustomHost": { "value": "$WEB_API_CUSTOM_HOST" },
+    "memoryPipelineCustomHost": { "value": "$MEMORY_CUSTOM_HOST" },
+    "dnsZoneName": { "value": "$CUSTOM_DOMAIN_ZONE" }  
 }
 EOF
 )
