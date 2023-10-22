@@ -32,13 +32,13 @@ param webSearcherPackageUri string = 'https://aka.ms/copilotchat/websearcher/lat
 param aiService string = 'AzureOpenAI'
 
 @description('Model to use for chat completions')
-param completionModel string = 'gpt-35-turbo'
+param completionModel string = 'gpt-4-32k'
 
 @description('Model to use for text embeddings')
 param embeddingModel string = 'text-embedding-ada-002'
 
 @description('Completion model the task planner should use')
-param plannerModel string = 'gpt-35-turbo'
+param plannerModel string = 'gpt-4-32k'
 
 @description('Azure OpenAI endpoint to use (Azure OpenAI only)')
 param aiEndpoint string = ''
@@ -383,7 +383,7 @@ resource appServiceWebConfig 'Microsoft.Web/sites/config@2022-09-01' = {
         }
         {
           name: 'SemanticMemory:Services:AzureBlobs:Container'
-          value: 'chatmemory'
+          value: 'memorypipeline'
         }
         {
           name: 'SemanticMemory:Services:AzureQueue:Auth'

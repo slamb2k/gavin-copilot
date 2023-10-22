@@ -111,7 +111,7 @@ while [[ $# -gt 0 ]]; do
         CUSTOM_DOMAIN_ZONE="$2"
         shift
         shift
-        ;;        
+        ;;
     -ms | --memory-store)
         MEMORY_STORE=="$2"
         shift
@@ -224,7 +224,7 @@ JSON_CONFIG=$(
     "memoryStore": { "value": "$MEMORY_STORE" },
     "deployCosmosDB": { "value": $([ "$NO_COSMOS_DB" = true ] && echo "false" || echo "true") },
     "deploySpeechServices": { "value": $([ "$NO_SPEECH_SERVICES" = true ] && echo "false" || echo "true") },
-    "deployWebSearcherPlugin": { "value": $([ "$DEPLOY_WEB_SEARCHER_PLUGIN" = true ] && echo "true" || echo "false") }
+    "deployWebSearcherPlugin": { "value": $([ "$DEPLOY_WEB_SEARCHER_PLUGIN" = true ] && echo "true" || echo "false") },
     "webapiCustomHost": { "value": "$WEB_API_CUSTOM_HOST" },
     "memoryPipelineCustomHost": { "value": "$MEMORY_CUSTOM_HOST" },
     "dnsZoneName": { "value": "$CUSTOM_DOMAIN_ZONE" }  
