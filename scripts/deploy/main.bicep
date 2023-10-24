@@ -9,7 +9,7 @@ Bicep template for deploying CopilotChat Azure resources.
 param name string = 'gavin'
 
 @description('SKU for the Azure App Service plan')
-@allowed([ 'B1', 'S1', 'S2', 'S3', 'P1V3', 'P2V3', 'I1V2', 'I2V2', 'P2MV2', 'P2MV3' ])
+@allowed([ 'B1', 'S1', 'S2', 'S3', 'P1V3', 'P2V3', 'I1V2', 'I2V2', 'P2V2', 'P3V2' ])
 param webAppServiceSku string = 'B1'
 
 @description('Location of package to deploy as the web service')
