@@ -132,7 +132,7 @@ public class DocumentController : ControllerBase
 
             if (string.IsNullOrWhiteSpace(blobId))
             {
-                return this.Ok("Unable to retrieve document");
+                return this.BadRequest("Unable to retrieve document");
             }
 
             BinaryData fileContent = await (contentStorage.ReadFileAsync(this._promptOptions.MemoryIndexName, blobId, citation.SourceName, false)
@@ -140,7 +140,7 @@ public class DocumentController : ControllerBase
 
             if (fileContent == null)
             {
-                return this.Ok("Unable to retrieve document");
+                return this.BadRequest("Unable to retrieve document");
             }
 
             var contentStream = fileContent.ToStream();
@@ -148,7 +148,7 @@ public class DocumentController : ControllerBase
         }
         catch (ContentStorageFileNotFoundException)
         {
-            return this.Ok("No documents found");
+            return this.NotFound("No documents found");
         }
     }
 
@@ -196,7 +196,9 @@ public class DocumentController : ControllerBase
             this._authInfo.Name
         );
 
-        return this.Ok("Documents imported successfully to global scope.");
+        // Since the UI expects a json object back with a 200 (Ok) status code, we return
+        //  202 (Accepted) here as the  upload is complete but the import is still in progress.
+        return this.Accepted();
 
         async Task<IList<ImportResult>> ImportDocumentsAsync()
         {
