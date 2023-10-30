@@ -180,8 +180,10 @@ internal static class SemanticKernelExtensions
         // Copilot chat skills
         kernel.RegisterChatSkill(sp);
 
-        // Time skill
+        // Time, Math and Text skills
         kernel.ImportSkill(new TimeSkill(), nameof(TimeSkill));
+        kernel.ImportSkill(new MathSkill(), nameof(MathSkill));
+        kernel.ImportSkill(new TextSkill(), nameof(TextSkill));
 
         return Task.CompletedTask;
     }
