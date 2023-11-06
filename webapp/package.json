@@ -33,7 +33,7 @@
     "remark-gfm": "^3.0.1"
   },
   "devDependencies": {
-    "@fluentui/react-button": "^9.3.50",
+    "@fluentui/react-button": "^9.3.53",
     "@fluentui/react-dialog": "^9.7.10",
     "@fluentui/react-input": "^9.4.48",
     "@fluentui/react-tooltip": "^9.3.17",

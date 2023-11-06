@@ -1452,18 +1452,18 @@
     prop-types "^15.7.2"
     react-is "^17.0.2"
 
-"@fluentui/react-button@^9.3.50":
-  version "9.3.50"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-button/-/react-button-9.3.50.tgz#83f7b5de646c201b5e6a519b06d50657c2290df6"
-  integrity sha512-GjlZLuyRE5AFPTMxY2KKkVrEUaoPCT31K4bhEuOMI/k8ETA0J0RiKrtDSNGNlRlhSL4JKbrI+MNiTHHQkm8f+g==
+"@fluentui/react-button@^9.3.50", "@fluentui/react-button@^9.3.53":
+  version "9.3.53"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-button/-/react-button-9.3.53.tgz#3222538a709c3b8d4c514352631e01825f210e2e"
+  integrity sha512-ZWvohqaQd/MlbhtAimdEQhOUxxtO1/RCGIInaymTmEIJr/c0D+CHsMPMSCBGS+C/W1IwKFhQ0qWjHZwwNZ9fvg==
   dependencies:
     "@fluentui/keyboard-keys" "^9.0.6"
     "@fluentui/react-aria" "^9.3.43"
     "@fluentui/react-icons" "^2.0.217"
     "@fluentui/react-jsx-runtime" "^9.0.18"
-    "@fluentui/react-shared-contexts" "^9.10.0"
-    "@fluentui/react-tabster" "^9.14.0"
-    "@fluentui/react-theme" "^9.1.14"
+    "@fluentui/react-shared-contexts" "^9.11.1"
+    "@fluentui/react-tabster" "^9.14.3"
+    "@fluentui/react-theme" "^9.1.15"
     "@fluentui/react-utilities" "^9.15.1"
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
@@ -1999,12 +1999,12 @@
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-shared-contexts@^9.10.0":
-  version "9.10.0"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-shared-contexts/-/react-shared-contexts-9.10.0.tgz#9f9c91cbfb07bbbe786b192c28e5c8c9776c4211"
-  integrity sha512-2ubHqWnnd2VX82wAuGV0VVOXuQMQPz3x+8cgcGDI+z0lGrBF679N8W55QuEisvnDojoe6iASxJmc311N3aRzSQ==
+"@fluentui/react-shared-contexts@^9.10.0", "@fluentui/react-shared-contexts@^9.11.1":
+  version "9.11.1"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-shared-contexts/-/react-shared-contexts-9.11.1.tgz#531d28f5faa4ad3810e2645332f2f670ac714c65"
+  integrity sha512-THP1ZNEgcGYC/7BBtReLJ+YuGxTt/3Z0JmIGfGwqNJelI7Wtm7mcynY5J0g04+NEHG9UtA9i2egt1qxfxknZ2Q==
   dependencies:
-    "@fluentui/react-theme" "^9.1.14"
+    "@fluentui/react-theme" "^9.1.15"
     "@swc/helpers" "^0.5.1"
 
 "@fluentui/react-skeleton@^9.0.36":
@@ -2112,13 +2112,13 @@
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-tabster@^9.14.0":
-  version "9.14.0"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-tabster/-/react-tabster-9.14.0.tgz#53938715ef8c4bb3f97c75b25abb4f2d6329a93b"
-  integrity sha512-fteaqPtTUt6OZIpwJ8bU/fzgBj0O9Xb+t2jDG19h5xlhDtl7KTWV2PNTCSdxdjwxSCRPtQuAasU0W7xcceMSpg==
+"@fluentui/react-tabster@^9.14.0", "@fluentui/react-tabster@^9.14.3":
+  version "9.14.3"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-tabster/-/react-tabster-9.14.3.tgz#e0dfc756f0e9ef6961f90da9e0696fe6d0d0a322"
+  integrity sha512-rlTWcUsveDROKd+482pcPJ1ATu4jiCw0QVgkc04IdQwm1JGHVFdl5zZntroj37cK8qwCCYjuolNEDOHzQ54+EQ==
   dependencies:
-    "@fluentui/react-shared-contexts" "^9.10.0"
-    "@fluentui/react-theme" "^9.1.14"
+    "@fluentui/react-shared-contexts" "^9.11.1"
+    "@fluentui/react-theme" "^9.1.15"
     "@fluentui/react-utilities" "^9.15.1"
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
@@ -2167,12 +2167,12 @@
     "@griffel/react" "^1.5.14"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-theme@^9.1.14":
-  version "9.1.14"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-theme/-/react-theme-9.1.14.tgz#148bda28deeb6877cab37175d68c795bffd99f90"
-  integrity sha512-Lc76jjNETV6gOFlE8b03WxcztdMhrYlj7eu6ZfRWtS6jJvyLka2BMm4ES8RyPPKmdbLnN/+BuOE6YySBs2qamg==
+"@fluentui/react-theme@^9.1.14", "@fluentui/react-theme@^9.1.15":
+  version "9.1.15"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-theme/-/react-theme-9.1.15.tgz#35e995b03b82332799d2f5631b3637158d4f40b1"
+  integrity sha512-WT8U9uFeS37TNCpiKRldq98jiy7jSuHuZO9SljRwmir5edQ2TTUqX4VL/aXVIl4B5iIU1dEeZXjnNfXl8f4s7w==
   dependencies:
-    "@fluentui/tokens" "1.0.0-alpha.11"
+    "@fluentui/tokens" "1.0.0-alpha.12"
     "@swc/helpers" "^0.5.1"
 
 "@fluentui/react-toast@^9.3.12":
@@ -2280,7 +2280,14 @@
     csstype "^3.0.2"
     lodash "^4.17.15"
 
-"@fluentui/tokens@1.0.0-alpha.11", "@fluentui/tokens@^1.0.0-alpha.11":
+"@fluentui/tokens@1.0.0-alpha.12":
+  version "1.0.0-alpha.12"
+  resolved "https://registry.yarnpkg.com/@fluentui/tokens/-/tokens-1.0.0-alpha.12.tgz#e4c058d493456cc210330162f2ca4988e7aebe1b"
+  integrity sha512-eqVatgwkdmnXoGhBM7JwKzuR9cGQ9LhG2Oa8SImea5Dzz/1JqDkrAsngefXaDXpDfLN59QTR17Bm6YMOAAz0mA==
+  dependencies:
+    "@swc/helpers" "^0.5.1"
+
+"@fluentui/tokens@^1.0.0-alpha.11":
   version "1.0.0-alpha.11"
   resolved "https://registry.yarnpkg.com/@fluentui/tokens/-/tokens-1.0.0-alpha.11.tgz#65c1e69808dbb87d8756f31351ddf69705e0acaa"
   integrity sha512-kHKR1/JIGcBXA0qr+MyNg8KQZL4RLJXlhaSV6yNn50rJ0kTdQHUCKbbficvNZoeQBj3x0A8/WgAbPmfppZo0Zg==
