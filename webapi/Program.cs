@@ -2,6 +2,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -22,7 +23,7 @@ using Microsoft.Extensions.Logging;
 namespace CopilotChat.WebApi;
 
 /// <summary>
-/// Copilot Chat Service
+/// Chat Copilot Service
 /// </summary>
 public sealed class Program
 {
@@ -46,8 +47,8 @@ public sealed class Program
             .AddPersistentChatStore()
             .AddPlugins(builder.Configuration)
             .AddUtilities()
-            .AddCopilotChatAuthentication(builder.Configuration)
-            .AddCopilotChatAuthorization();
+            .AddChatCopilotAuthentication(builder.Configuration)
+            .AddChatCopilotAuthorization();
 
         // Configure and add semantic services
         builder
@@ -68,6 +69,14 @@ public sealed class Program
             .AddSingleton<ITelemetryService, AppInsightsTelemetryService>();
 
         TelemetryDebugWriter.IsTracingDisabled = Debugger.IsAttached;
+
+        // Add named HTTP clients for IHttpClientFactory
+        builder.Services.AddHttpClient();
+        builder.Services.AddHttpClient("Plugin", httpClient =>
+        {
+            int timeout = int.Parse(builder.Configuration["Planner:PluginTimeoutLimitInS"] ?? "100", CultureInfo.InvariantCulture);
+            httpClient.Timeout = TimeSpan.FromSeconds(timeout);
+        });
 
         // Add in the rest of the services.
         builder.Services

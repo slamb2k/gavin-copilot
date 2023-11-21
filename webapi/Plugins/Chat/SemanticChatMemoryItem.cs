@@ -2,7 +2,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace CopilotChat.WebApi.Skills.ChatSkills;
+namespace CopilotChat.WebApi.Plugins.Chat;
 
 /// <summary>
 /// A single entry in the chat memory.
@@ -38,6 +38,6 @@ public class SemanticChatMemoryItem
     /// <returns>A formatted string representing the item.</returns>
     public string ToFormattedString()
     {
-        return $"{this.Label}: {this.Details.Trim()}";
+        return $"{this.Label}: {this.Details?.Trim()}";
     }
 }

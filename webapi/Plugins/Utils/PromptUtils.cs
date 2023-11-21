@@ -1,8 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
-using static CopilotChat.WebApi.Models.Storage.ChatMessage;
+using static CopilotChat.WebApi.Models.Storage.CopilotChatMessage;
 
-namespace CopilotChat.WebApi.Skills.Utils;
+namespace CopilotChat.WebApi.Plugins.Utils;
 
 /// <summary>
 /// Utility methods for prompt generation.

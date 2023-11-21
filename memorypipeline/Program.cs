@@ -10,8 +10,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.SemanticMemory;
-using Microsoft.SemanticMemory.Diagnostics;
+using Microsoft.KernelMemory;
+using Microsoft.KernelMemory.Diagnostics;
 
 // ********************************************************
 // ************** SETUP ***********************************
@@ -19,8 +19,8 @@ using Microsoft.SemanticMemory.Diagnostics;
 
 var builder = WebApplication.CreateBuilder();
 
-ISemanticMemoryClient memory =
-    new MemoryClientBuilder(builder.Services)
+IKernelMemory memory =
+    new KernelMemoryBuilder(builder.Services)
         .FromAppSettings()
         .WithCustomOcr(builder.Configuration)
         .Build();

@@ -14,31 +14,32 @@ using CopilotChat.WebApi.Hubs;
 using CopilotChat.WebApi.Models.Response;
 using CopilotChat.WebApi.Models.Storage;
 using CopilotChat.WebApi.Options;
+using CopilotChat.WebApi.Plugins.Utils;
 using CopilotChat.WebApi.Services;
-using CopilotChat.WebApi.Skills.Utils;
 using CopilotChat.WebApi.Storage;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.KernelMemory;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
-using Microsoft.SemanticKernel.AI.TextCompletion;
+using Microsoft.SemanticKernel.Connectors.AI.OpenAI;
 using Microsoft.SemanticKernel.Diagnostics;
 using Microsoft.SemanticKernel.Orchestration;
 using Microsoft.SemanticKernel.Planning;
-using Microsoft.SemanticKernel.SkillDefinition;
-using Microsoft.SemanticKernel.TemplateEngine.Prompt;
-using Microsoft.SemanticMemory;
+using Microsoft.SemanticKernel.TemplateEngine;
+using Microsoft.SemanticKernel.TemplateEngine.Basic;
 using ChatCompletionContextMessages = Microsoft.SemanticKernel.AI.ChatCompletion.ChatHistory;
+using CopilotChatMessage = CopilotChat.WebApi.Models.Storage.CopilotChatMessage;
 
-namespace CopilotChat.WebApi.Skills.ChatSkills;
+namespace CopilotChat.WebApi.Plugins.Chat;
 
 /// <summary>
-/// ChatSkill offers a more coherent chat experience by using memories
+/// ChatPlugin offers a more coherent chat experience by using memories
 /// to extract conversation history and user intentions.
 /// </summary>
-public class ChatSkill
+public class ChatPlugin
 {
     /// <summary>
     /// A kernel instance to create a completion function since each invocation
@@ -47,9 +48,9 @@ public class ChatSkill
     private readonly IKernel _kernel;
 
     /// <summary>
-    /// Client for the semantic-memory service.
+    /// Client for the kernel memory service.
     /// </summary>
-    private readonly ISemanticMemoryClient _memoryClient;
+    private readonly IKernelMemory _memoryClient;
 
     /// <summary>
     /// A logger instance to log events.
@@ -77,14 +78,14 @@ public class ChatSkill
     private readonly PromptsOptions _promptOptions;
 
     /// <summary>
-    /// A semantic memory retriever instance to query semantic memories.
+    /// A kernel memory retriever instance to query semantic memories.
     /// </summary>
     private readonly SemanticMemoryRetriever _semanticMemoryRetriever;
 
     /// <summary>
-    /// A skill instance to acquire external information.
+    /// A plugin instance to acquire external information.
     /// </summary>
-    private readonly ExternalInformationSkill _externalInformationSkill;
+    private readonly ExternalInformationPlugin _externalInformationPlugin;
 
     /// <summary>
     /// Azure content safety moderator.
@@ -92,11 +93,11 @@ public class ChatSkill
     private readonly AzureContentSafety? _contentSafety = null;
 
     /// <summary>
-    /// Create a new instance of <see cref="ChatSkill"/>.
+    /// Create a new instance of <see cref="ChatPlugin"/>.
     /// </summary>
-    public ChatSkill(
+    public ChatPlugin(
         IKernel kernel,
-        ISemanticMemoryClient memoryClient,
+        IKernelMemory memoryClient,
         ChatMessageRepository chatMessageRepository,
         ChatSessionRepository chatSessionRepository,
         IHubContext<MessageRelayHub> messageRelayHubContext,
@@ -121,7 +122,7 @@ public class ChatSkill
             memoryClient,
             logger);
 
-        this._externalInformationSkill = new ExternalInformationSkill(
+        this._externalInformationPlugin = new ExternalInformationPlugin(
             promptOptions,
             planner,
             logger);
@@ -133,10 +134,7 @@ public class ChatSkill
     /// </summary>
     /// <param name="context">The SKContext.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    [SKFunction, Description("Extract user intent")]
-    [SKParameter("chatId", "Chat ID to extract history from")]
-    [SKParameter("audience", "The audience the chat bot is interacting with.")]
-    public async Task<string> ExtractUserIntentAsync(SKContext context, CancellationToken cancellationToken = default)
+    private async Task<string> ExtractUserIntentAsync(SKContext context, CancellationToken cancellationToken = default)
     {
         var tokenLimit = this._promptOptions.CompletionTokenLimit;
         var historyTokenBudget =
@@ -157,12 +155,12 @@ public class ChatSkill
 
         var completionFunction = this._kernel.CreateSemanticFunction(
             this._promptOptions.SystemIntentExtraction,
-            skillName: nameof(ChatSkill),
+            pluginName: nameof(ChatPlugin),
             description: "Complete the prompt.");
 
         var result = await completionFunction.InvokeAsync(
             intentExtractionContext,
-            settings: this.CreateIntentCompletionSettings(),
+            this.CreateIntentCompletionSettings(),
             cancellationToken
         );
 
@@ -178,9 +176,7 @@ public class ChatSkill
     /// </summary>
     /// <param name="context">The SKContext.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    [SKFunction, Description("Extract audience list")]
-    [SKParameter("chatId", "Chat ID to extract history from")]
-    public async Task<string> ExtractAudienceAsync(SKContext context, CancellationToken cancellationToken = default)
+    private async Task<string> ExtractAudienceAsync(SKContext context, CancellationToken cancellationToken = default)
     {
         var tokenLimit = this._promptOptions.CompletionTokenLimit;
         var historyTokenBudget =
@@ -199,12 +195,12 @@ public class ChatSkill
 
         var completionFunction = this._kernel.CreateSemanticFunction(
             this._promptOptions.SystemAudienceExtraction,
-            skillName: nameof(ChatSkill),
+            pluginName: nameof(ChatPlugin),
             description: "Complete the prompt.");
 
         var result = await completionFunction.InvokeAsync(
             audienceExtractionContext,
-            settings: this.CreateIntentCompletionSettings(),
+            this.CreateIntentCompletionSettings(),
             cancellationToken
         );
 
@@ -254,13 +250,13 @@ public class ChatSkill
         {
             var formattedMessage = chatMessage.ToFormattedString();
 
-            if (chatMessage.Type == ChatMessage.ChatMessageType.Document)
+            if (chatMessage.Type == CopilotChatMessage.ChatMessageType.Document)
             {
                 continue;
             }
 
             // Plan object is not meaningful content in generating bot response, so shorten to intent only to save on tokens
-            if (chatMessage.Type == ChatMessage.ChatMessageType.Plan)
+            if (chatMessage.Type == CopilotChatMessage.ChatMessageType.Plan)
             {
                 formattedMessage = "Bot proposed plan";
 
@@ -276,16 +272,16 @@ public class ChatSkill
                 formattedMessage = $"[{chatMessage.Timestamp.ToString("G", CultureInfo.CurrentCulture)}] {formattedMessage}";
             }
 
-            var promptRole = chatMessage.AuthorRole == ChatMessage.AuthorRoles.Bot ? AuthorRole.System : AuthorRole.User;
+            var promptRole = chatMessage.AuthorRole == CopilotChatMessage.AuthorRoles.Bot ? AuthorRole.System : AuthorRole.User;
             var tokenCount = chatHistory is not null ? TokenUtils.GetContextMessageTokenCount(promptRole, formattedMessage) : TokenUtils.TokenCount(formattedMessage);
 
             if (remainingToken - tokenCount >= 0)
             {
                 historyText = $"{formattedMessage}\n{historyText}";
-                if (chatMessage.AuthorRole == ChatMessage.AuthorRoles.Bot)
+                if (chatMessage.AuthorRole == CopilotChatMessage.AuthorRoles.Bot)
                 {
                     // Message doesn't have to be formatted for bot. This helps with asserting a natural language response from the LLM (no date or author preamble).
-                    var botMessage = chatMessage.Type == ChatMessage.ChatMessageType.Plan ? formattedMessage : chatMessage.Content;
+                    var botMessage = chatMessage.Type == CopilotChatMessage.ChatMessageType.Plan ? formattedMessage : chatMessage.Content;
                     allottedChatHistory.AddAssistantMessage(botMessage.Trim());
                 }
                 else
@@ -338,7 +334,7 @@ public class ChatSkill
         var chatContext = context.Clone();
         chatContext.Variables.Set("knowledgeCutoff", this._promptOptions.KnowledgeCutoffDate);
 
-        ChatMessage chatMessage = await this.GetChatResponseAsync(chatId, userId, chatContext, newUserMessage, cancellationToken);
+        CopilotChatMessage chatMessage = await this.GetChatResponseAsync(chatId, userId, chatContext, newUserMessage, cancellationToken);
         context.Variables.Update(chatMessage.Content);
 
         if (chatMessage.TokenUsage != null)
@@ -347,7 +343,7 @@ public class ChatSkill
         }
         else
         {
-            this._logger.LogWarning("ChatSkill.ChatAsync token usage unknown. Ensure token management has been implemented correctly.");
+            this._logger.LogWarning("ChatPlugin.ChatAsync token usage unknown. Ensure token management has been implemented correctly.");
         }
 
         return context;
@@ -392,7 +388,7 @@ public class ChatSkill
 
         // Save this new message to memory such that subsequent chat responses can use it
         await this.UpdateBotResponseStatusOnClientAsync(chatId, "Saving user message to chat history", cancellationToken);
-        var newUserMessage = await this.SaveNewMessageAsync(message, userId, userName, chatId, ChatMessage.ChatMessageType.Message.ToString(), cancellationToken);
+        var newUserMessage = await this.SaveNewMessageAsync(message, userId, userName, chatId, CopilotChatMessage.ChatMessageType.Message.ToString(), cancellationToken);
 
         // If GeneratedPlanMessageId exists on plan object, update that message with new plan state.
         // This signals that this plan was freshly proposed by the model and already saved as a bot response message in chat history.
@@ -413,7 +409,7 @@ public class ChatSkill
            );
         }
 
-        ChatMessage chatMessage;
+        CopilotChatMessage chatMessage;
         if (deserializedPlan.State == PlanState.Rejected)
         {
             // Use a hardcoded response if user cancelled plan
@@ -438,31 +434,27 @@ public class ChatSkill
 
             // Add original user input that prompted plan template
             promptTemplate.AddUserMessage(deserializedPlan.OriginalUserInput);
-            chatHistoryString += "\n" + PromptUtils.FormatChatHistoryMessage(ChatMessage.AuthorRoles.User, deserializedPlan.OriginalUserInput);
+            chatHistoryString += "\n" + PromptUtils.FormatChatHistoryMessage(CopilotChatMessage.AuthorRoles.User, deserializedPlan.OriginalUserInput);
 
             // Add bot message proposal as prompt context message
-            chatContext.Variables.Set("planFunctions", this._externalInformationSkill.FormattedFunctionsString(deserializedPlan.Plan));
-            var promptRenderer = new PromptTemplateEngine();
-            var proposedPlanBotMessage = await promptRenderer.RenderAsync(
-               this._promptOptions.ProposedPlanBotMessage,
-                chatContext,
-                cancellationToken);
+            chatContext.Variables.Set("planFunctions", this._externalInformationPlugin.FormattedFunctionsString(deserializedPlan.Plan));
+            var promptTemplateFactory = new BasicPromptTemplateFactory();
+            var proposedPlanTemplate = promptTemplateFactory.Create(this._promptOptions.ProposedPlanBotMessage, new PromptTemplateConfig());
+            var proposedPlanBotMessage = await proposedPlanTemplate.RenderAsync(chatContext, cancellationToken);
             promptTemplate.AddAssistantMessage(proposedPlanBotMessage);
-            chatHistoryString += "\n" + PromptUtils.FormatChatHistoryMessage(ChatMessage.AuthorRoles.Bot, proposedPlanBotMessage);
+            chatHistoryString += "\n" + PromptUtils.FormatChatHistoryMessage(CopilotChatMessage.AuthorRoles.Bot, proposedPlanBotMessage);
 
             // Add user approval message as prompt context message
             promptTemplate.AddUserMessage("Yes, proceed");
-            chatHistoryString += "\n" + PromptUtils.FormatChatHistoryMessage(ChatMessage.AuthorRoles.User, "Yes, proceed");
+            chatHistoryString += "\n" + PromptUtils.FormatChatHistoryMessage(CopilotChatMessage.AuthorRoles.User, "Yes, proceed");
 
             // Add user intent behind plan
             // TODO: [Issue #51] Consider regenerating user intent if plan was modified
             promptTemplate.AddSystemMessage(deserializedPlan.UserIntent);
 
             // Render system supplement to help guide model in using data.
-            var promptSupplement = await promptRenderer.RenderAsync(
-                this._promptOptions.PlanResultsDescription,
-                chatContext,
-                cancellationToken);
+            var promptSupplementTemplate = promptTemplateFactory.Create(this._promptOptions.PlanResultsDescription, new PromptTemplateConfig());
+            var promptSupplement = await promptSupplementTemplate.RenderAsync(chatContext, cancellationToken);
 
             // Calculate remaining token budget and execute plan
             await this.UpdateBotResponseStatusOnClientAsync(chatId, "Executing plan", cancellationToken);
@@ -489,7 +481,7 @@ public class ChatSkill
                 }
                 else
                 {
-                    this._logger.LogWarning("ChatSkill.ProcessPlan token usage unknown. Ensure token management has been implemented correctly.");
+                    this._logger.LogWarning("ChatPlugin.ProcessPlan token usage unknown. Ensure token management has been implemented correctly.");
                 }
             }
             catch (Exception ex)
@@ -518,8 +510,6 @@ public class ChatSkill
         return context;
     }
 
-    #region Private
-
     /// <summary>
     /// Generate the necessary chat context to create a prompt then invoke the model to get a response.
     /// </summary>
@@ -529,7 +519,7 @@ public class ChatSkill
     /// <param name="userMessage">ChatMessage object representing new user message.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The created chat message containing the model-generated response.</returns>
-    private async Task<ChatMessage> GetChatResponseAsync(string chatId, string userId, SKContext chatContext, ChatMessage userMessage, CancellationToken cancellationToken)
+    private async Task<CopilotChatMessage> GetChatResponseAsync(string chatId, string userId, SKContext chatContext, CopilotChatMessage userMessage, CancellationToken cancellationToken)
     {
         // Render system instruction components and create the meta-prompt template
         var systemInstructions = await AsyncUtils.SafeInvokeAsync(
@@ -566,12 +556,12 @@ public class ChatSkill
 
         // Extract additional details about stepwise planner execution in chat context
         var plannerDetails = new SemanticDependency<PlanExecutionMetadata>(
-                this._externalInformationSkill.StepwiseThoughtProcess?.RawResult ?? planResult,
-                this._externalInformationSkill.StepwiseThoughtProcess
+                this._externalInformationPlugin.StepwiseThoughtProcess?.RawResult ?? planResult,
+                this._externalInformationPlugin.StepwiseThoughtProcess
             );
 
         // If plan is suggested, send back to user for approval before running
-        var proposedPlan = this._externalInformationSkill.ProposedPlan;
+        var proposedPlan = this._externalInformationPlugin.ProposedPlan;
         if (proposedPlan != null)
         {
             // Save a new response to the chat history with the proposed plan content
@@ -587,10 +577,10 @@ public class ChatSkill
         }
 
         // If plan result is to be used as bot response, save the Stepwise result as a new response to the chat history and return.
-        if (this._externalInformationSkill.UseStepwiseResultAsBotResponse(planResult))
+        if (this._externalInformationPlugin.UseStepwiseResultAsBotResponse(planResult))
         {
             var promptDetails = new BotResponsePrompt("", "", userIntent, "", plannerDetails, "", new ChatHistory());
-            return await this.HandleBotResponseAsync(chatId, userId, chatContext, promptDetails, cancellationToken, null, this._externalInformationSkill.StepwiseThoughtProcess!.RawResult);
+            return await this.HandleBotResponseAsync(chatId, userId, chatContext, promptDetails, cancellationToken, null, this._externalInformationPlugin.StepwiseThoughtProcess!.RawResult);
         }
 
         // Query relevant semantic and document memories
@@ -635,11 +625,11 @@ public class ChatSkill
     {
         // Render system instruction components
         await this.UpdateBotResponseStatusOnClientAsync(chatId, "Initializing prompt", cancellationToken);
-        var promptRenderer = new PromptTemplateEngine();
-        return await promptRenderer.RenderAsync(
-            this._promptOptions.SystemPersona,
-            context,
-            cancellationToken);
+
+        var promptTemplateFactory = new BasicPromptTemplateFactory();
+        var template = promptTemplateFactory.Create(this._promptOptions.SystemPersona, new PromptTemplateConfig());
+
+        return await template.RenderAsync(context, cancellationToken);
     }
 
     /// <summary>
@@ -650,7 +640,7 @@ public class ChatSkill
     /// <param name="chatContext">Chat context.</param>
     /// <param name="promptView">The prompt view.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task<ChatMessage> HandleBotResponseAsync(
+    private async Task<CopilotChatMessage> HandleBotResponseAsync(
         string chatId,
         string userId,
         SKContext chatContext,
@@ -659,7 +649,7 @@ public class ChatSkill
         IEnumerable<CitationSource>? citations = null,
         string? responseContent = null)
     {
-        ChatMessage chatMessage;
+        CopilotChatMessage chatMessage;
         if (responseContent.IsNullOrEmpty())
         {
             // Get bot response and stream to client
@@ -759,8 +749,8 @@ public class ChatSkill
         SKContext planContext = context.Clone();
         planContext.Variables.Set("tokenLimit", tokenLimit.ToString(new NumberFormatInfo()));
         return plan is not null
-            ? await this._externalInformationSkill.ExecutePlanAsync(planContext, plan, cancellationToken)
-            : await this._externalInformationSkill.InvokePlannerAsync(userIntent, planContext, cancellationToken);
+            ? await this._externalInformationPlugin.ExecutePlanAsync(planContext, plan, cancellationToken)
+            : await this._externalInformationPlugin.InvokePlannerAsync(userIntent, planContext, cancellationToken);
     }
 
     /// <summary>
@@ -772,7 +762,7 @@ public class ChatSkill
     /// <param name="chatId">The chat ID</param>
     /// <param name="type">Type of the message</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task<ChatMessage> SaveNewMessageAsync(string message, string userId, string userName, string chatId, string type, CancellationToken cancellationToken)
+    private async Task<CopilotChatMessage> SaveNewMessageAsync(string message, string userId, string userName, string chatId, string type, CancellationToken cancellationToken)
     {
         // Make sure the chat exists.
         if (!await this._chatSessionRepository.TryFindByIdAsync(chatId))
@@ -780,18 +770,18 @@ public class ChatSkill
             throw new ArgumentException("Chat session does not exist.");
         }
 
-        var chatMessage = new ChatMessage(
+        var chatMessage = new CopilotChatMessage(
             userId,
             userName,
             chatId,
             message,
             string.Empty,
             null,
-            ChatMessage.AuthorRoles.User,
+            CopilotChatMessage.AuthorRoles.User,
             // Default to a standard message if the `type` is not recognized
-            Enum.TryParse(type, out ChatMessage.ChatMessageType typeAsEnum) && Enum.IsDefined(typeof(ChatMessage.ChatMessageType), typeAsEnum)
+            Enum.TryParse(type, out CopilotChatMessage.ChatMessageType typeAsEnum) && Enum.IsDefined(typeof(CopilotChatMessage.ChatMessageType), typeAsEnum)
                 ? typeAsEnum
-                : ChatMessage.ChatMessageType.Message);
+                : CopilotChatMessage.ChatMessageType.Message);
 
         await this._chatMessageRepository.CreateAsync(chatMessage);
         return chatMessage;
@@ -808,7 +798,7 @@ public class ChatSkill
     /// <param name="tokenUsage">Total token usage of response completion</param>
     /// <param name="citations">Citations for the message</param>
     /// <returns>The created chat message.</returns>
-    private async Task<ChatMessage> SaveNewResponseAsync(
+    private async Task<CopilotChatMessage> SaveNewResponseAsync(
         string response,
         string prompt,
         string chatId,
@@ -848,7 +838,7 @@ public class ChatSkill
     /// <param name="cancellationToken">The cancellation token.</param>
     private async Task UpdateChatMessageContentAsync(string updatedResponse, string messageId, string chatId, CancellationToken cancellationToken)
     {
-        ChatMessage? chatMessage = null;
+        CopilotChatMessage? chatMessage = null;
         if (!await this._chatMessageRepository.TryFindByIdAsync(messageId, chatId, callback: v => chatMessage = v))
         {
             throw new ArgumentException($"Chat message {messageId} does not exist.");
@@ -859,11 +849,11 @@ public class ChatSkill
     }
 
     /// <summary>
-    /// Create `ChatRequestSettings` for chat response. Parameters are read from the PromptSettings class.
+    /// Create `OpenAIRequestSettings` for chat response. Parameters are read from the PromptSettings class.
     /// </summary>
-    private ChatRequestSettings CreateChatRequestSettings()
+    private OpenAIRequestSettings CreateChatRequestSettings()
     {
-        return new ChatRequestSettings
+        return new OpenAIRequestSettings
         {
             MaxTokens = this._promptOptions.ResponseTokenLimit,
             Temperature = this._promptOptions.ResponseTemperature,
@@ -874,11 +864,11 @@ public class ChatSkill
     }
 
     /// <summary>
-    /// Create `CompleteRequestSettings` for intent response. Parameters are read from the PromptSettings class.
+    /// Create `OpenAIRequestSettings` for intent response. Parameters are read from the PromptSettings class.
     /// </summary>
-    private CompleteRequestSettings CreateIntentCompletionSettings()
+    private OpenAIRequestSettings CreateIntentCompletionSettings()
     {
-        return new CompleteRequestSettings
+        return new OpenAIRequestSettings
         {
             MaxTokens = this._promptOptions.ResponseTokenLimit,
             Temperature = this._promptOptions.IntentTemperature,
@@ -940,7 +930,7 @@ public class ChatSkill
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <param name="citations">Citations for the message</param>
     /// <returns>The created chat message</returns>
-    private async Task<ChatMessage> StreamResponseToClientAsync(
+    private async Task<CopilotChatMessage> StreamResponseToClientAsync(
         string chatId,
         string userId,
         BotResponsePrompt prompt,
@@ -949,7 +939,11 @@ public class ChatSkill
     {
         // Create the stream
         var chatCompletion = this._kernel.GetService<IChatCompletion>();
-        var stream = chatCompletion.GenerateMessageStreamAsync(prompt.MetaPromptTemplate, this.CreateChatRequestSettings(), cancellationToken);
+        var stream =
+            chatCompletion.GenerateMessageStreamAsync(
+                prompt.MetaPromptTemplate,
+                this.CreateChatRequestSettings(),
+                cancellationToken);
 
         // Create message on client
         var chatMessage = await this.CreateBotMessageOnClient(
@@ -982,7 +976,7 @@ public class ChatSkill
     /// <param name="citations">Citations for the message</param>
     /// <param name="tokenUsage">Total token usage of response completion</param>
     /// <returns>The created chat message</returns>
-    private async Task<ChatMessage> CreateBotMessageOnClient(
+    private async Task<CopilotChatMessage> CreateBotMessageOnClient(
         string chatId,
         string userId,
         string prompt,
@@ -991,7 +985,7 @@ public class ChatSkill
         IEnumerable<CitationSource>? citations = null,
         Dictionary<string, int>? tokenUsage = null)
     {
-        var chatMessage = ChatMessage.CreateBotResponseMessage(chatId, content, prompt, citations, tokenUsage);
+        var chatMessage = CopilotChatMessage.CreateBotResponseMessage(chatId, content, prompt, citations, tokenUsage);
         await this._messageRelayHubContext.Clients.Group(chatId).SendAsync("ReceiveMessage", chatId, userId, chatMessage, cancellationToken);
         return chatMessage;
     }
@@ -1001,7 +995,7 @@ public class ChatSkill
     /// </summary>
     /// <param name="message">The message</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task UpdateMessageOnClient(ChatMessage message, CancellationToken cancellationToken)
+    private async Task UpdateMessageOnClient(CopilotChatMessage message, CancellationToken cancellationToken)
     {
         await this._messageRelayHubContext.Clients.Group(message.ChatId).SendAsync("ReceiveMessageUpdate", message, cancellationToken);
     }
@@ -1031,8 +1025,6 @@ public class ChatSkill
             throw new ArgumentException("Chat session does not exist.");
         }
 
-        this._promptOptions.SystemDescription = chatSession!.SystemDescription;
+        this._promptOptions.SystemDescription = chatSession!.SafeSystemDescription;
     }
-
-    # endregion
 }
