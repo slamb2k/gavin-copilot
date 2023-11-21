@@ -149,30 +149,28 @@ export const DocumentsTab: React.FC = () => {
                             conversations[selectedId].disabled || (importingDocuments && importingDocuments.length > 0)
                         }
                         onClick={() => {
-                                setImportScope(DocumentScopes.Chat);
-                                documentFileRef.current?.click();
-                            }
-                        }
+                            setImportScope(DocumentScopes.Chat);
+                            documentFileRef.current?.click();
+                        }}
                     >
                         Upload to Chat
                     </Button>
-                </Tooltip>                
+                </Tooltip>
                 <Tooltip content="Upload file to global document store" relationship="label">
                     <Button
                         className={classes.uploadButton}
                         icon={<DocumentDatabaseRegular />}
                         disabled={
-                            (conversations[selectedId].disabled || (importingDocuments && importingDocuments.length > 0))
+                            conversations[selectedId].disabled || (importingDocuments && importingDocuments.length > 0)
                         }
                         onClick={() => {
-                                setImportScope(DocumentScopes.Global);
-                                documentFileRef.current?.click();
-                            }
-                        }
+                            setImportScope(DocumentScopes.Global);
+                            documentFileRef.current?.click();
+                        }}
                     >
                         Upload to Everyone
                     </Button>
-                </Tooltip>                
+                </Tooltip>
                 {importingDocuments && importingDocuments.length > 0 && <Spinner size="tiny" />}
                 {/* Hardcode vector database as we don't support switching vector store dynamically now. */}
                 <div className={classes.vectorDatabase}>

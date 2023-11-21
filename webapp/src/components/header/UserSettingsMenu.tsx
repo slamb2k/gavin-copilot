@@ -48,7 +48,7 @@ export const UserSettingsMenu: FC<IUserSettingsProps> = ({ setLoadingState }) =>
 
     const onLogout = useCallback(() => {
         setLoadingState();
-        AuthHelper.logoutAsync(instance);   
+        AuthHelper.logoutAsync(instance);
         resetState();
     }, [instance, setLoadingState]);
 
@@ -58,12 +58,12 @@ export const UserSettingsMenu: FC<IUserSettingsProps> = ({ setLoadingState }) =>
                 <Menu>
                     <MenuTrigger disableButtonEnhancement>
                         {
-                                <Avatar
+                            <Avatar
                                 className={classes.root}
                                 key={activeUserInfo?.username}
                                 name={activeUserInfo?.username}
                                 size={36}
-                                color='brand'
+                                color="brand"
                                 badge={
                                     !features[FeatureKeys.SimplifiedExperience].enabled
                                         ? { status: 'available' }
@@ -100,7 +100,8 @@ export const UserSettingsMenu: FC<IUserSettingsProps> = ({ setLoadingState }) =>
                             </MenuItem>
                         </MenuList>
                     </MenuPopover>
-                    </Menu>
+                </Menu>
+            ) : (
                 // ) : (
                 //     <Avatar
                 //         className={classes.root}
@@ -109,7 +110,6 @@ export const UserSettingsMenu: FC<IUserSettingsProps> = ({ setLoadingState }) =>
                 //         color='neutral'
                 //     />
                 // )
-            ) : (
                 <Button
                     data-testid="settingsButtonWithoutAuth"
                     style={{ color: 'white' }}

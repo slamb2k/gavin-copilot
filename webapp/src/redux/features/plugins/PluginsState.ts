@@ -82,8 +82,7 @@ export const initialState: PluginsState = {
         [BuiltInPlugins.Jira]: {
             name: BuiltInPlugins.Jira,
             publisher: 'Atlassian',
-            description:
-                `Authorize ${process.env.REACT_APP_TITLE} to link with Jira and retrieve specific issues by providing the issue key.`,
+            description: `Authorize ${process.env.REACT_APP_TITLE} to link with Jira and retrieve specific issues by providing the issue key.`,
             enabled: false,
             authRequirements: {
                 email: true,
@@ -104,8 +103,7 @@ export const initialState: PluginsState = {
         [BuiltInPlugins.GitHub]: {
             name: BuiltInPlugins.GitHub,
             publisher: 'Microsoft',
-            description:
-                `Integrate Github with ${process.env.REACT_APP_TITLE}, i.e., allow ${process.env.REACT_APP_TITLE} to list active Pull Requests for you.`,
+            description: `Integrate Github with ${process.env.REACT_APP_TITLE}, i.e., allow ${process.env.REACT_APP_TITLE} to list active Pull Requests for you.`,
             enabled: false,
             authRequirements: {
                 personalAccessToken: true,

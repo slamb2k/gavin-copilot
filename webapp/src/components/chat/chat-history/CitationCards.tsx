@@ -9,7 +9,7 @@ import {
     CardHeader,
     Text,
     makeStyles,
-    shorthands
+    shorthands,
 } from '@fluentui/react-components';
 import { ArrowDownload24Regular, FolderOpenRegular } from '@fluentui/react-icons';
 import React, { useState } from 'react';
@@ -67,13 +67,13 @@ export const CitationCards: React.FC<ICitationCardsProps> = ({ message }) => {
     //     setShowSnippetStates(newShowSnippetStates);
     // };
 
-    const onDownloadCitedDocument = (citation : Citation) => {
+    const onDownloadCitedDocument = (citation: Citation) => {
         void file.downloadCitedDocument(citation, false);
     };
 
-    const onOpenCitedDocument = (citation : Citation) => {
+    const onOpenCitedDocument = (citation: Citation) => {
         void file.downloadCitedDocument(citation, true);
-    };  
+    };
 
     return (
         <div className={classes.root}>
@@ -82,14 +82,9 @@ export const CitationCards: React.FC<ICitationCardsProps> = ({ message }) => {
                     <Card className={classes.card} key={`citation-card-${index}`}>
                         <CardHeader
                             image={
-                            <Badge
-                                shape="circular"
-                                appearance="filled"
-                                color="brand"
-                                size="extra-large"
-                            >
-                                {index + 1}
-                            </Badge>
+                                <Badge shape="circular" appearance="filled" color="brand" size="extra-large">
+                                    {index + 1}
+                                </Badge>
                             }
                             header={<Text weight="semibold">{citation.sourceName}</Text>}
                             description={<Caption1>Relevance score: {citation.relevanceScore.toFixed(3)}</Caption1>}
@@ -98,12 +93,20 @@ export const CitationCards: React.FC<ICitationCardsProps> = ({ message }) => {
                         <CardFooter>
                             <Button
                                 icon={<FolderOpenRegular />}
-                                onClick={() => { onOpenCitedDocument(citation) }}
-                            >Open</Button>
+                                onClick={() => {
+                                    onOpenCitedDocument(citation);
+                                }}
+                            >
+                                Open
+                            </Button>
                             <Button
                                 icon={<ArrowDownload24Regular />}
-                                onClick={() => { onDownloadCitedDocument(citation) }}
-                            >Download</Button>                            
+                                onClick={() => {
+                                    onDownloadCitedDocument(citation);
+                                }}
+                            >
+                                Download
+                            </Button>
                         </CardFooter>
                     </Card>
                 );
