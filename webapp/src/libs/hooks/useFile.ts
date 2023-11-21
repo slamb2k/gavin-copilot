@@ -105,14 +105,18 @@ export const useFile = () => {
         }
     };
 
-    const downloadCitedDocument = async (citation : Citation, openFile : boolean) => {
+    const downloadCitedDocument = async (citation: Citation, openFile: boolean) => {
         try {
-            await documentImportService.downloadCitedDocument(citation, openFile, await AuthHelper.getSKaaSAccessToken(instance, inProgress));
+            await documentImportService.downloadCitedDocument(
+                citation,
+                openFile,
+                await AuthHelper.getSKaaSAccessToken(instance, inProgress),
+            );
         } catch (e: any) {
             const errorMessage = `Unabled to download cited document. Details: ${getErrorDetails(e)}`;
             dispatch(addAlert({ message: errorMessage, type: AlertType.Error }));
         }
-    };    
+    };
 
     return {
         loadFile,

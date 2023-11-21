@@ -4,7 +4,6 @@ import { Citation, IChatMessage } from '../models/ChatMessage';
 import { ServiceInfo } from '../models/ServiceInfo';
 import { BaseService } from './BaseService';
 
-
 /**
  * Scope of the document. This determines the collection name in the document memory.
  */
@@ -13,7 +12,7 @@ export enum DocumentScopes {
     Global,
 
     // The document is associated with a sopecific chat and user.
-    Chat
+    Chat,
 }
 
 export class DocumentImportService extends BaseService {
@@ -32,9 +31,7 @@ export class DocumentImportService extends BaseService {
 
         return await this.getResponseAsync<IChatMessage>(
             {
-                commandPath: (scope === DocumentScopes.Global) ?
-                    `documents` :
-                    `chats/${chatId}/documents`,
+                commandPath: scope === DocumentScopes.Global ? `documents` : `chats/${chatId}/documents`,
                 method: 'POST',
                 body: formData,
             },
@@ -54,11 +51,7 @@ export class DocumentImportService extends BaseService {
         return serviceInfo.isContentSafetyEnabled;
     };
 
-    public downloadCitedDocument = async (
-        citation: Citation,
-        openFile = true,
-        accessToken: string,
-    ): Promise<void> => {
+    public downloadCitedDocument = async (citation: Citation, openFile = true, accessToken: string): Promise<void> => {
         const payload = {
             Link: citation.link,
             SourceName: citation.sourceName,
@@ -66,24 +59,22 @@ export class DocumentImportService extends BaseService {
         };
 
         try {
-            const requestUrl = new URL("documents/getcitation", this.serviceUrl);
+            const requestUrl = new URL('documents/getcitation', this.serviceUrl);
             await fetch(requestUrl, {
                 method: 'POST',
                 headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
             })
-                .then(response => response.blob())
-                .then(blob => {
-
+                .then((response) => response.blob())
+                .then((blob) => {
                     const blobURL = URL.createObjectURL(blob);
 
                     if (openFile) {
                         window.open(blobURL);
-                    }
-                    else {
+                    } else {
                         const link = document.createElement('a');
                         link.href = blobURL;
                         link.download = citation.sourceName;

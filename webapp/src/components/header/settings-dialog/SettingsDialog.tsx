@@ -18,7 +18,7 @@ import {
     Divider,
     makeStyles,
     shorthands,
-    tokens
+    tokens,
 } from '@fluentui/react-components';
 import React from 'react';
 import { useAppSelector } from '../../../redux/app/hooks';

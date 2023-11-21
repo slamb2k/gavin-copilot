@@ -16,15 +16,14 @@ using CopilotChat.WebApi.Models.Storage;
 using CopilotChat.WebApi.Options;
 using CopilotChat.WebApi.Services;
 using CopilotChat.WebApi.Storage;
-using DocumentFormat.OpenXml.Office2010.Word;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.SemanticMemory;
-using Microsoft.SemanticMemory.ContentStorage;
-using Microsoft.SemanticMemory.Diagnostics;
+using Microsoft.KernelMemory;
+using Microsoft.KernelMemory.ContentStorage;
+using Microsoft.KernelMemory.Diagnostics;
 
 namespace CopilotChat.WebApi.Controllers;
 
@@ -32,7 +31,7 @@ namespace CopilotChat.WebApi.Controllers;
 /// Controller for importing documents.
 /// </summary>
 /// <remarks>
-/// This controller is responsible for contracts that are not possible to fulfill by semantic-memory components.
+/// This controller is responsible for contracts that are not possible to fulfill by kernel memory components.
 /// </remarks>
 [ApiController]
 public class DocumentController : ControllerBase
@@ -90,7 +89,7 @@ public class DocumentController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public Task<IActionResult> DocumentImportAsync(
-        [FromServices] ISemanticMemoryClient memoryClient,
+        [FromServices] IKernelMemory memoryClient,
         [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
         [FromForm] DocumentImportForm documentImportForm)
     {
@@ -111,7 +110,7 @@ public class DocumentController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public Task<IActionResult> DocumentImportAsync(
-        [FromServices] ISemanticMemoryClient memoryClient,
+        [FromServices] IKernelMemory memoryClient,
         [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
         [FromRoute] Guid chatId,
         [FromForm] DocumentImportForm documentImportForm)
@@ -153,7 +152,7 @@ public class DocumentController : ControllerBase
     }
 
     private async Task<IActionResult> DocumentImportAsync(
-        ISemanticMemoryClient memoryClient,
+        IKernelMemory memoryClient,
         IHubContext<MessageRelayHub> messageRelayHubContext,
         DocumentScopes documentScope,
         Guid chatId,
@@ -479,11 +478,11 @@ public class DocumentController : ControllerBase
     /// <param name="chatId">The target chat-id</param>
     /// <param name="documentMessageContent">The document message content</param>
     /// <returns>A ChatMessage object if successful, null otherwise</returns>
-    private async Task<ChatMessage?> TryCreateDocumentUploadMessage(
+    private async Task<CopilotChatMessage?> TryCreateDocumentUploadMessage(
         Guid chatId,
         DocumentMessageContent documentMessageContent)
     {
-        var chatMessage = ChatMessage.CreateDocumentMessage(
+        var chatMessage = CopilotChatMessage.CreateDocumentMessage(
             this._authInfo.UserId,
             this._authInfo.Name, // User name
             chatId.ToString(),

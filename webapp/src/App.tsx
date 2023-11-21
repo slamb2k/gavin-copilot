@@ -6,7 +6,7 @@ import 'react-tooltip/dist/react-tooltip.css';
 
 import * as React from 'react';
 import { useEffect } from 'react';
-import { Tooltip } from "react-tooltip";
+import { Tooltip } from 'react-tooltip';
 import { LogoSection } from './components/header/LogoSection';
 import { UserSettingsMenu } from './components/header/UserSettingsMenu';
 import { PluginGallery } from './components/open-api-plugins/PluginGallery';
@@ -32,7 +32,7 @@ export const useClasses = makeStyles({
     header: {
         display: 'flex',
         flexDirection: 'row',
-        justifyContent: 'space-between',  
+        justifyContent: 'space-between',
         backgroundImage: `url(${headerBackground})`,
         backgroundRepeat: 'no-repeat',
         height: '14vh',
@@ -46,7 +46,7 @@ export const useClasses = makeStyles({
     headerRight: {
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',  
+        justifyContent: 'space-between',
         paddingRight: '30px',
         paddingTop: '20px',
         paddingBottom: '20px',
@@ -64,14 +64,14 @@ export const useClasses = makeStyles({
         flexDirection: 'row',
         marginLeft: 'auto',
         paddingRight: '0px',
-    },    
+    },
     headerToolbarItem: {
-        opacity: '0.7', 
+        opacity: '0.7',
         '&:hover': {
             cursor: 'pointer',
-            opacity: '1.0'
-        }
-    },       
+            opacity: '1.0',
+        },
+    },
 });
 
 enum AppState {
@@ -167,26 +167,28 @@ const App = () => {
             {AuthHelper.isAuthAAD() ? (
                 <>
                     <UnauthenticatedTemplate>
-                        <div className={classes.container}>                    
+                        <div className={classes.container}>
                             <div className={classes.header}>
                                 <div className={classes.headerLeft}>
                                     <LogoSection />
                                 </div>
                                 <div className={classes.headerRight}>
                                     <div className={classes.headerCustomerLogo}>
-                                        <Image src={msOpenAILogo} /> 
+                                        <Image src={msOpenAILogo} />
                                     </div>
                                     <div className={classes.headerToolbar}>
                                         <div className={classes.headerToolbarItem}>
                                             <PluginGallery />
                                         </div>
                                         <div className={classes.headerToolbarItem}>
-                                            <UserSettingsMenu setLoadingState={() => {setAppState(AppState.SigningOut);
+                                            <UserSettingsMenu
+                                                setLoadingState={() => {
+                                                    setAppState(AppState.SigningOut);
                                                 }}
                                             />
                                         </div>
                                     </div>
-                                </div>                                
+                                </div>
                             </div>
                             {appState === AppState.SigningOut && <Loading text="Signing you out..." />}
                             {appState !== AppState.SigningOut && <Login />}
@@ -221,31 +223,35 @@ const Chat = ({
     }, [setAppState]);
     return (
         <div className={classes.container}>
-            <div className={classes.header} data-tooltip-id='headerTooltip' data-tooltip-place="top">
+            <div className={classes.header} data-tooltip-id="headerTooltip" data-tooltip-place="top">
                 <Tooltip id="headerTooltip" place="left-start" style={{ width: '300px' }}>
                     <div>
                         <h3>Midjourney Prompt</h3>
-                        <p>A photograph of a lonely cyborg wandering around a carpark late at night, trying to remember where he parked his car. Ensure the main subject of the image is on the left side of the shot and is not too far away. --ar 16:9 --v 5.2 --style raw</p>
+                        <p>
+                            A photograph of a lonely cyborg wandering around a carpark late at night, trying to remember
+                            where he parked his car. Ensure the main subject of the image is on the left side of the
+                            shot and is not too far away. --ar 16:9 --v 5.2 --style raw
+                        </p>
                     </div>
                 </Tooltip>
                 <div className={classes.headerLeft}>
                     <LogoSection />
                 </div>
                 {appState > AppState.SettingUserInfo && (
-                <div className={classes.headerRight}>
-                    <div className={classes.headerCustomerLogo}>
-                        <Image src={msOpenAILogo} /> 
-                    </div>
-                    <div className={classes.headerToolbar}>
-                        <div className={classes.headerToolbarItem}>
-                            <PluginGallery />
+                    <div className={classes.headerRight}>
+                        <div className={classes.headerCustomerLogo}>
+                            <Image src={msOpenAILogo} />
                         </div>
-                        <div className={classes.headerToolbarItem}>
-                            <UserSettingsMenu
-                                setLoadingState={() => {
-                                    setAppState(AppState.SigningOut);
-                                }}
-                            />
+                        <div className={classes.headerToolbar}>
+                            <div className={classes.headerToolbarItem}>
+                                <PluginGallery />
+                            </div>
+                            <div className={classes.headerToolbarItem}>
+                                <UserSettingsMenu
+                                    setLoadingState={() => {
+                                        setAppState(AppState.SigningOut);
+                                    }}
+                                />
                             </div>
                         </div>
                     </div>

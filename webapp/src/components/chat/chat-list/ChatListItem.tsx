@@ -87,13 +87,7 @@ interface IChatListItemProps {
     isSelected: boolean;
 }
 
-export const ChatListItem: FC<IChatListItemProps> = ({
-    id,
-    header,
-    timestamp,
-    preview,
-    isSelected,
-}) => {
+export const ChatListItem: FC<IChatListItemProps> = ({ id, header, timestamp, preview, isSelected }) => {
     const classes = useClasses();
     const dispatch = useAppDispatch();
     const { features } = useAppSelector((state: RootState) => state.app);
@@ -118,7 +112,7 @@ export const ChatListItem: FC<IChatListItemProps> = ({
             <Persona
                 avatar={{
                     name: process.env.REACT_APP_TITLE,
-                    color: 'colorful'
+                    color: 'colorful',
                 }}
                 presence={!features[FeatureKeys.SimplifiedExperience].enabled ? { status: 'available' } : undefined}
             />
