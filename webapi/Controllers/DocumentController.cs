@@ -16,6 +16,7 @@ using CopilotChat.WebApi.Models.Storage;
 using CopilotChat.WebApi.Options;
 using CopilotChat.WebApi.Services;
 using CopilotChat.WebApi.Storage;
+using DocumentFormat.OpenXml.Office2010.Word;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -128,27 +129,26 @@ public class DocumentController : ControllerBase
     {
         try
         {
-            var blobId = citation.Link.Split('/').FirstOrDefault();
+            var documentId = citation.Link.Split('/').FirstOrDefault();
 
-            if (string.IsNullOrWhiteSpace(blobId))
+            if (string.IsNullOrWhiteSpace(documentId))
             {
-                return this.BadRequest("Unable to retrieve document");
+                return this.BadRequest($"Invalid document id: {documentId}");
             }
 
-            BinaryData fileContent = await (contentStorage.ReadFileAsync(this._promptOptions.MemoryIndexName, blobId, citation.SourceName, false)
-                .ConfigureAwait(false));
+            BinaryData fileContent = await (contentStorage.ReadFileAsync(this._promptOptions.MemoryIndexName, documentId, citation.SourceName, false));
 
             if (fileContent == null)
             {
-                return this.BadRequest("Unable to retrieve document");
+                return this.BadRequest($"Unable to retrieve document: {documentId}");
             }
 
             var contentStream = fileContent.ToStream();
             return this.File(contentStream, citation.SourceContentType, citation.SourceName);
         }
-        catch (ContentStorageFileNotFoundException)
+        catch (ContentStorageFileNotFoundException ex)
         {
-            return this.NotFound("No documents found");
+            return this.NotFound($"Document not found: {ex.Message}");
         }
     }
 
@@ -197,7 +197,7 @@ public class DocumentController : ControllerBase
         );
 
         // Since the UI expects a json object back with a 200 (Ok) status code, we return
-        //  202 (Accepted) here as the  upload is complete but the import is still in progress.
+        //  202 (Accepted) here as the upload is complete but the import is still in progress.
         return this.Accepted();
 
         async Task<IList<ImportResult>> ImportDocumentsAsync()
