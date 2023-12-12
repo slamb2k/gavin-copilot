@@ -4,17 +4,6 @@ import { Citation, IChatMessage } from '../models/ChatMessage';
 import { ServiceInfo } from '../models/ServiceInfo';
 import { BaseService } from './BaseService';
 
-/**
- * Scope of the document. This determines the collection name in the document memory.
- */
-export enum DocumentScopes {
-    // The document is not associated with a chat and available to all users.
-    Global,
-
-    // The document is associated with a sopecific chat and user.
-    Chat,
-}
-
 export class DocumentImportService extends BaseService {
     public importDocumentAsync = async (
         chatId: string,
@@ -22,6 +11,7 @@ export class DocumentImportService extends BaseService {
         scope: DocumentScopes,
         useContentSafety: boolean,
         accessToken: string,
+        uploadToGlobal: boolean,
     ) => {
         const formData = new FormData();
         formData.append('useContentSafety', useContentSafety.toString());
@@ -31,7 +21,7 @@ export class DocumentImportService extends BaseService {
 
         return await this.getResponseAsync<IChatMessage>(
             {
-                commandPath: scope === DocumentScopes.Global ? `documents` : `chats/${chatId}/documents`,
+                commandPath: uploadToGlobal ? `documents` : `chats/${chatId}/documents`,
                 method: 'POST',
                 body: formData,
             },

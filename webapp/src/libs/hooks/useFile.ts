@@ -55,6 +55,7 @@ export const useFile = () => {
         chatId: string,
         scope: DocumentScopes,
         documentFileRef: React.MutableRefObject<HTMLInputElement | null>,
+        uploadToGlobal = false,
         file?: File,
         dragAndDropFiles?: FileList,
     ) => {
@@ -71,7 +72,7 @@ export const useFile = () => {
             );
 
             if (filesArray.length > 0) {
-                await chat.importDocument(chatId, scope, filesArray);
+                await chat.importDocument(chatId, filesArray, uploadToGlobal);
             }
 
             dispatch(
