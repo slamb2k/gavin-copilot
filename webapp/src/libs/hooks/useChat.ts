@@ -299,7 +299,6 @@ export const useChat = () => {
             await documentImportService.importDocumentAsync(
                 chatId,
                 files,
-                scope,
                 features[FeatureKeys.AzureContentSafety].enabled,
                 await AuthHelper.getSKaaSAccessToken(instance, inProgress),
                 uploadToGlobal,
