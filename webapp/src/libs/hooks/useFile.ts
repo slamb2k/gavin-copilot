@@ -9,7 +9,7 @@ import { setImportingDocumentsToConversation } from '../../redux/features/conver
 import { AuthHelper } from '../auth/AuthHelper';
 import { AlertType } from '../models/AlertType';
 import { Citation } from '../models/ChatMessage';
-import { DocumentImportService, DocumentScopes } from '../services/DocumentImportService';
+import { DocumentImportService } from '../services/DocumentImportService';
 import { useChat } from './useChat';
 
 export const useFile = () => {
@@ -53,7 +53,6 @@ export const useFile = () => {
 
     const handleImport = async (
         chatId: string,
-        scope: DocumentScopes,
         documentFileRef: React.MutableRefObject<HTMLInputElement | null>,
         uploadToGlobal = false,
         file?: File,

@@ -8,7 +8,6 @@ export class DocumentImportService extends BaseService {
     public importDocumentAsync = async (
         chatId: string,
         documents: File[],
-        scope: DocumentScopes,
         useContentSafety: boolean,
         accessToken: string,
         uploadToGlobal: boolean,
