@@ -35,7 +35,7 @@ import {
     DocumentPdfRegular,
     DocumentTextRegular,
     FluentIconsProps,
-    GlobeAdd20Regular
+    GlobeAdd20Regular,
 } from '@fluentui/react-icons';
 import * as React from 'react';
 import { useRef } from 'react';
@@ -138,8 +138,8 @@ export const DocumentsTab: React.FC = () => {
                 {/* Hidden input for file upload. Only accept .txt and .pdf files for now. */}
                 <input
                     type="file"
+                    aria-label="Upload local chat document"
                     ref={localDocumentFileRef}
-                    style={{ display: 'none' }}
                     accept={Constants.app.importTypes}
                     multiple={true}
                     onChange={() => {
@@ -148,6 +148,7 @@ export const DocumentsTab: React.FC = () => {
                 />
                 <input
                     type="file"
+                    aria-label="Upload global document"
                     ref={globalDocumentFileRef}
                     accept={Constants.app.importTypes}
                     multiple={true}
