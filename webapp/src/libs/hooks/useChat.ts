@@ -26,7 +26,7 @@ import { TokenUsage } from '../models/TokenUsage';
 import { IAskVariables } from '../semantic-kernel/model/Ask';
 import { ChatArchiveService } from '../services/ChatArchiveService';
 import { ChatService } from '../services/ChatService';
-import { DocumentImportService, DocumentScopes } from '../services/DocumentImportService';
+import { DocumentImportService } from '../services/DocumentImportService';
 
 import botIcon1 from '../../assets/bot-icons/bot-icon-1.png';
 import botIcon2 from '../../assets/bot-icons/bot-icon-2.png';
@@ -294,14 +294,14 @@ export const useChat = () => {
         return [];
     };
 
-    const importDocument = async (chatId: string, scope: DocumentScopes, files: File[]) => {
+    const importDocument = async (chatId: string, files: File[], uploadToGlobal: boolean) => {
         try {
             await documentImportService.importDocumentAsync(
                 chatId,
                 files,
-                scope,
                 features[FeatureKeys.AzureContentSafety].enabled,
                 await AuthHelper.getSKaaSAccessToken(instance, inProgress),
+                uploadToGlobal,
             );
         } catch (e: any) {
             let errorDetails = getErrorDetails(e);
