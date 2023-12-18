@@ -135,12 +135,13 @@ export const DocumentsTab: React.FC = () => {
             learnMoreLink="https://aka.ms/sk-docs-vectordb"
         >
             <div className={classes.functional}>
-                {/* Hidden input for file upload. Only accept .txt and .pdf files for now. */}
+                {/* Hidden input for file upload. Only accepts importtypes for now. */}
                 <input
                     type="file"
                     aria-label="Upload local chat document"
                     ref={localDocumentFileRef}
                     accept={Constants.app.importTypes}
+                    style={{ display: 'none' }}
                     multiple={true}
                     onChange={() => {
                         void fileHandler.handleImport(selectedId, localDocumentFileRef, false);
@@ -151,6 +152,7 @@ export const DocumentsTab: React.FC = () => {
                     aria-label="Upload global document"
                     ref={globalDocumentFileRef}
                     accept={Constants.app.importTypes}
+                    style={{ display: 'none' }}
                     multiple={true}
                     onChange={() => {
                         void fileHandler.handleImport(selectedId, globalDocumentFileRef, true);
