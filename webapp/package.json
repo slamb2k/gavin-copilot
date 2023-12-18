@@ -38,7 +38,7 @@
         "@types/node": "^20.9.2",
         "@types/react": "^18.2.37",
         "@types/react-dom": "^18.2.14",
-        "@typescript-eslint/eslint-plugin": "^6.11.0",
+        "@typescript-eslint/eslint-plugin": "^6.14.0",
         "@typescript-eslint/parser": "^6.11.0",
         "@fluentui/react-button": "^9.3.50",
         "@fluentui/react-dialog": "^9.7.10",
