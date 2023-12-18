@@ -156,39 +156,6 @@ public class DocumentController : ControllerBase
         }
     }
 
-    [Route("documents/getcitation")]
-    [HttpPost]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> DocumentDownload(
-        [FromServices] IContentStorage contentStorage,
-        [FromBody] CitationSource citation)
-    {
-        try
-        {
-            var documentId = citation.Link.Split('/').FirstOrDefault();
-
-            if (string.IsNullOrWhiteSpace(documentId))
-            {
-                return this.BadRequest($"Invalid document id: {documentId}");
-            }
-
-            BinaryData fileContent = await (contentStorage.ReadFileAsync(this._promptOptions.MemoryIndexName, documentId, citation.SourceName, false));
-
-            if (fileContent == null)
-            {
-                return this.BadRequest($"Unable to retrieve document: {documentId}");
-            }
-
-            var contentStream = fileContent.ToStream();
-            return this.File(contentStream, citation.SourceContentType, citation.SourceName);
-        }
-        catch (ContentStorageFileNotFoundException ex)
-        {
-            return this.NotFound($"Document not found: {ex.Message}");
-        }
-    }
-
     private async Task<IActionResult> DocumentImportAsync(
         IKernelMemory memoryClient,
         IHubContext<MessageRelayHub> messageRelayHubContext,
