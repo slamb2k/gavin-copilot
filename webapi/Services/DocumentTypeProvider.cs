@@ -25,6 +25,8 @@ public class DocumentTypeProvider
                 { FileExtensions.MarkDown, false },
                 { FileExtensions.MsWord, false },
                 { FileExtensions.MsWordX, false },
+                { FileExtensions.MsExcel, false },
+                { FileExtensions.MsPowerPoint, false },
                 { FileExtensions.Pdf, false },
                 { FileExtensions.PlainText, false },
                 { FileExtensions.ImageBmp, true },
