@@ -197,9 +197,9 @@ export const ChatHistoryItem: React.FC<ChatHistoryItemProps> = ({ message, messa
                         {showShowRLHFMessage && (
                             <div className={classes.rlhf}>{<UserFeedbackActions messageIndex={messageIndex} />}</div>
                         )}
-                        {showCitationCards && <CitationCards message={message} />}
                     </div>
                 )}
+                {showCitationCards && <CitationCards message={message} />}
             </div>
             {features[FeatureKeys.RLHF].enabled && message.userFeedback === UserFeedback.Positive && (
                 <ThumbLikeFilled color="gray" />
