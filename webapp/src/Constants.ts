@@ -5,7 +5,7 @@ export const Constants = {
         name: process.env.REACT_APP_TITLE,
         updateCheckIntervalSeconds: 60 * 5,
         CONNECTION_ALERT_ID: 'connection-alert',
-        importTypes: '.txt,.pdf,.docx,.md,.jpg,.jpeg,.png,.tif,.tiff,.bmp,.gif',
+        importTypes: '.txt,.pdf,.docx,.xlsx,.xls,.pptx,.md,.jpg,.jpeg,.png,.tif,.tiff,.bmp,.gif',
     },
     msal: {
         method: 'redirect', // 'redirect' | 'popup'
