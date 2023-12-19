@@ -386,7 +386,7 @@ resource appServiceWebConfig 'Microsoft.Web/sites/config@2022-09-01' = {
         }
         {
           name: 'KernelMemory:Services:AzureBlobs:Container'
-          value: 'chatmemory'
+          value: 'memorypipeline'
         }
         {
           name: 'KernelMemory:Services:AzureQueue:Auth'
