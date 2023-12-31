@@ -85,8 +85,15 @@ export function replaceCitationLinksWithIndices(formattedMessageContent: string,
     const citations = message.citations;
     if (citations) {
         citations.forEach((citation, index) => {
-            const citationLink = citation.link;
-            formattedMessageContent = formattedMessageContent.replaceAll(citationLink, (index + 1).toString());
+            const citationLink = `[${citation.link}]`;
+            const citationIndex = `<span style="border-radius: 3px;
+                                    background: #d4960080;
+                                    padding-bottom:1px;
+                                    padding-left:4px;
+                                    padding-right:4px;
+                                    font-size: 12px;" >${index + 1}</span>`;
+
+            formattedMessageContent = formattedMessageContent.replaceAll(citationLink, citationIndex);
         });
     }
 

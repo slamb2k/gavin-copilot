@@ -31,6 +31,7 @@ import {
     useTableSort,
 } from '@fluentui/react-components';
 import {
+    DeleteRegular,
     DocumentArrowUp20Regular,
     DocumentPdfRegular,
     DocumentTextRegular,
@@ -57,6 +58,9 @@ const useClasses = makeStyles({
         ...shorthands.margin('0', '0', tokens.spacingVerticalS, '0'),
     },
     uploadButton: {
+        ...shorthands.margin('0', tokens.spacingHorizontalS, '0', '0'),
+    },
+    deleteButton: {
         ...shorthands.margin('0', tokens.spacingHorizontalS, '0', '0'),
     },
     vectorDatabase: {
@@ -127,7 +131,11 @@ export const DocumentsTab: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [importingDocuments, selectedId]);
 
-    const { columns, rows } = useTable(resources);
+    const onDeleteDocument = (chatId: string, documentId: string) => {
+        void fileHandler.deleteDocument(chatId, documentId);
+    };
+
+    const { columns, rows } = useTable(resources, onDeleteDocument);
     return (
         <TabView
             title="Documents"
@@ -236,7 +244,7 @@ export const DocumentsTab: React.FC = () => {
     );
 };
 
-function useTable(resources: ChatMemorySource[]) {
+function useTable(resources: ChatMemorySource[], onDeleteDocument: (chatId: string, documentId: string) => void) {
     const headerSortProps = (columnId: TableColumnId): TableHeaderCellProps => ({
         onClick: (e: React.MouseEvent) => {
             toggleColumnSort(e, columnId);
@@ -334,6 +342,26 @@ function useTable(resources: ChatMemorySource[]) {
                         shape="rounded"
                         thickness="large"
                         color={item.id.startsWith('in-progress') ? 'brand' : 'success'}
+                    />
+                </TableCell>
+            ),
+            compare: (a, b) => {
+                const aAccess = getAccessString(a.chatId);
+                const bAccess = getAccessString(b.chatId);
+                const comparison = aAccess.localeCompare(bAccess);
+                return getSortDirection('progress') === 'ascending' ? comparison : comparison * -1;
+            },
+        }),
+        createTableColumn<TableItem>({
+            columnId: 'delete',
+            renderHeaderCell: () => <TableHeaderCell key="delete" {...headerSortProps('delete')}></TableHeaderCell>,
+            renderCell: (item) => (
+                <TableCell key={`${item.id}-delete`}>
+                    <Button
+                        icon={<DeleteRegular />}
+                        onClick={() => {
+                            onDeleteDocument(item.chatId, item.id);
+                        }}
                     />
                 </TableCell>
             ),

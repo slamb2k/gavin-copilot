@@ -118,11 +118,25 @@ export const useFile = () => {
         }
     };
 
+    const deleteDocument = async (chatId: string, documentId: string) => {
+        try {
+            await documentImportService.deleteDocumentAsync(
+                chatId,
+                documentId,
+                await AuthHelper.getSKaaSAccessToken(instance, inProgress),
+            );
+        } catch (e: any) {
+            const errorMessage = `Unabled to delete document and memory. Details: ${getErrorDetails(e)}`;
+            dispatch(addAlert({ message: errorMessage, type: AlertType.Error }));
+        }
+    };
+
     return {
         loadFile,
         downloadFile,
         handleImport,
         getContentSafetyStatus,
         downloadCitedDocument,
+        deleteDocument,
     };
 };

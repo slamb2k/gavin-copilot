@@ -53,7 +53,7 @@ const useClasses = makeStyles({
     item: {
         backgroundColor: customTokens.colorNeutralBackground1,
         ...shorthands.borderRadius(customTokens.borderRadiusMedium),
-        ...shorthands.padding(customTokens.spacingVerticalXS, customTokens.spacingHorizontalS),
+        ...shorthands.padding(customTokens.spacingVerticalS, customTokens.spacingHorizontalM),
     },
     me: {
         backgroundColor: customTokens.colorMeBackground,

@@ -37,6 +37,7 @@ namespace CopilotChat.WebApi.Controllers;
 public class DocumentController : ControllerBase
 {
     private const string GlobalDocumentUploadedClientCall = "GlobalDocumentUploaded";
+    private const string GlobalDocumentDeletedClientCall = "GlobalDocumentDeleted";
     private const string ReceiveMessageClientCall = "ReceiveMessage";
 
     private readonly ILogger<DocumentController> _logger;
@@ -213,6 +214,100 @@ public class DocumentController : ControllerBase
         return this.Ok(chatMessage);
     }
 
+    [Route("documents/{documentId}")]
+    [HttpDelete]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public Task<IActionResult> DocumentDeleteAsync(
+    [FromServices] IKernelMemory memoryClient,
+    [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
+    [FromRoute] Guid documentId)
+    {
+        return this.DocumentDeletionAsync(
+            memoryClient,
+            messageRelayHubContext,
+            DocumentScopes.Global,
+            DocumentMemoryOptions.GlobalDocumentChatId,
+            documentId
+        );
+    }
+
+    [Route("chats/{chatId}/documents/{documentId}")]
+    [HttpDelete]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public Task<IActionResult> DocumentDeleteAsync(
+    [FromServices] IKernelMemory memoryClient,
+    [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
+    [FromRoute] Guid chatId,
+    [FromRoute] Guid documentId)
+    {
+        return this.DocumentDeletionAsync(
+            memoryClient,
+            messageRelayHubContext,
+            DocumentScopes.Chat,
+            chatId,
+            documentId
+        );
+    }
+
+    private async Task<IActionResult> DocumentDeletionAsync(
+        IKernelMemory memoryClient,
+        IHubContext<MessageRelayHub> messageRelayHubContext,
+        DocumentScopes documentScope,
+        Guid chatId,
+        Guid memoryId)
+    {
+        try
+        {
+            await this.ValidateDocumentDeletionAsync(chatId, memoryId);
+        }
+        catch (ArgumentException ex)
+        {
+            return this.BadRequest(ex.Message);
+        }
+
+        this._logger.LogInformation("Deleting memory: {0}...", memoryId);
+
+        // Pre-create chat-message
+        DocumentMessageContent documentMessageContent = new();
+
+        await this.DeleteDocumentAsync(memoryId, memoryClient, chatId);
+
+        var chatMessage = await this.TryCreateDocumentDeletionMessage(chatId, documentMessageContent);
+
+        if (chatMessage == null)
+        {
+            this._logger.LogWarning("Failed to create document deletion message - {Content}", documentMessageContent.ToString());
+            return this.BadRequest();
+        }
+
+        // Broadcast the document uploaded event to other users.
+        if (documentScope == DocumentScopes.Chat)
+        {
+            // If chat message isn't created, it is still broadcast and visible in the documents tab.
+            // The chat message won't, however, be displayed when the chat is freshly rendered.
+
+            var userId = this._authInfo.UserId;
+            await messageRelayHubContext.Clients.Group(chatId.ToString())
+                .SendAsync(ReceiveMessageClientCall, chatId, userId, chatMessage);
+
+            this._logger.LogInformation("Local memory deletion chat message: {0}", chatMessage.ToString());
+
+            return this.Ok(chatMessage);
+        }
+
+        await messageRelayHubContext.Clients.All.SendAsync(
+            GlobalDocumentDeletedClientCall,
+            documentMessageContent.ToFormattedStringNamesOnly(),
+            this._authInfo.Name
+        );
+
+        this._logger.LogInformation("Global memory deletion chat message: {0}", chatMessage.ToString());
+
+        return this.Ok(chatMessage);
+    }
+
     private async Task<IList<ImportResult>> ImportDocumentsAsync(IKernelMemory memoryClient, Guid chatId, DocumentImportForm documentImportForm, DocumentMessageContent messageContent)
     {
         IEnumerable<ImportResult> importResults = new List<ImportResult>();
@@ -286,6 +381,22 @@ public class DocumentController : ControllerBase
             {
                 return false;
             }
+        }
+    }
+
+    private async Task DeleteDocumentAsync(Guid memoryId, IKernelMemory memoryClient, Guid chatId)
+    {
+        this._logger.LogInformation("Deleting document {0}", memoryId);
+
+        try
+        {
+            await memoryClient.DeleteDocumentAsync(
+                documentId: memoryId.ToString(),
+                index: this._promptOptions.MemoryIndexName);
+        }
+        catch (Exception ex) when (ex is not SystemException)
+        {
+            this._logger.LogError(ex, "Failed to delete document {0}", memoryId);
         }
     }
 
@@ -396,6 +507,30 @@ public class DocumentController : ControllerBase
     }
 
     /// <summary>
+    /// Validates a document memory deletion.
+    /// </summary>
+    /// <param name="chatId">If the document is specific to a chat, this will be the Guid or Guid.Empty if the memory is global.</param>
+    /// <param name="documentId">The Guid representing the document and memory.</param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException">Throws ArgumentException if validation fails.</exception>
+    private async Task ValidateDocumentDeletionAsync(Guid chatId, Guid documentId)
+    {
+        // Make sure the user has access to the chat session if the document is uploaded to a chat session.
+        if ((chatId != Guid.Empty)
+            && !(await this.UserHasAccessToChatAsync(this._authInfo.UserId, chatId)))
+        {
+            throw new ArgumentException("User does not have access to the chat session.");
+        }
+
+        if (documentId == Guid.Empty)
+        {
+            throw new ArgumentException("Invalid document id specified.");
+        }
+
+        // TODO: Confirm the document exists in memory.
+    }
+
+    /// <summary>
     /// Validates the document import form.
     /// </summary>
     /// <param name="documentStatusForm">The document import form.</param>
@@ -492,6 +627,33 @@ public class DocumentController : ControllerBase
     /// <param name="messageContent">The document message content</param>
     /// <returns>A ChatMessage object if successful, null otherwise</returns>
     private async Task<CopilotChatMessage?> TryCreateDocumentUploadMessage(
+        Guid chatId,
+        DocumentMessageContent messageContent)
+    {
+        var chatMessage = CopilotChatMessage.CreateDocumentMessage(
+            this._authInfo.UserId,
+            this._authInfo.Name, // User name
+            chatId.ToString(),
+            messageContent);
+
+        try
+        {
+            await this._messageRepository.CreateAsync(chatMessage);
+            return chatMessage;
+        }
+        catch (Exception ex) when (ex is ArgumentOutOfRangeException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Try to create a chat message that represents document deletion.
+    /// </summary>
+    /// <param name="chatId">The target chat-id</param>
+    /// <param name="messageContent">The document message content</param>
+    /// <returns>A ChatMessage object if successful, null otherwise</returns>
+    private async Task<CopilotChatMessage?> TryCreateDocumentDeletionMessage(
         Guid chatId,
         DocumentMessageContent messageContent)
     {

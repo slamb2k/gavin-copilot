@@ -11,7 +11,7 @@ import {
     makeStyles,
     shorthands,
 } from '@fluentui/react-components';
-import { ArrowDownload24Regular, FolderOpenRegular } from '@fluentui/react-icons';
+import { ArrowDownload24Regular, FolderOpenRegular, SearchRegular } from '@fluentui/react-icons';
 import React, { useState } from 'react';
 import { useFile } from '../../../libs/hooks';
 import { Citation, IChatMessage } from '../../../libs/models/ChatMessage';
@@ -75,6 +75,10 @@ export const CitationCards: React.FC<ICitationCardsProps> = ({ message }) => {
         void file.downloadCitedDocument(citation, true);
     };
 
+    const onQueryCitedDocument = (citation: Citation) => {
+        void file.downloadCitedDocument(citation, true);
+    };
+
     return (
         <div className={classes.root}>
             {message.citations.map((citation, index) => {
@@ -91,6 +95,16 @@ export const CitationCards: React.FC<ICitationCardsProps> = ({ message }) => {
                         />
 
                         <CardFooter>
+                            {citation.sourceContentType == 'application/msexcel' && (
+                                <Button
+                                    icon={<SearchRegular />}
+                                    onClick={() => {
+                                        onQueryCitedDocument(citation);
+                                    }}
+                                >
+                                    Query
+                                </Button>
+                            )}
                             <Button
                                 icon={<FolderOpenRegular />}
                                 onClick={() => {

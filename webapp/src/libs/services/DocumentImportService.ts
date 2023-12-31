@@ -4,6 +4,8 @@ import { Citation, IChatMessage } from '../models/ChatMessage';
 import { ServiceInfo } from '../models/ServiceInfo';
 import { BaseService } from './BaseService';
 
+const EmptyGuid = '00000000-0000-0000-0000-000000000000';
+
 export class DocumentImportService extends BaseService {
     public importDocumentAsync = async (
         chatId: string,
@@ -23,6 +25,20 @@ export class DocumentImportService extends BaseService {
                 commandPath: uploadToGlobal ? `documents` : `chats/${chatId}/documents`,
                 method: 'POST',
                 body: formData,
+            },
+            accessToken,
+        );
+    };
+
+    public deleteDocumentAsync = async (
+        chatId: string,
+        documentId: string,
+        accessToken: string
+    ) => {
+        return await this.getResponseAsync<IChatMessage>(
+            {
+                commandPath: (chatId === EmptyGuid) ? `documents/${documentId}` : `chats/${chatId}/documents/${documentId}`,
+                method: 'DELETE',
             },
             accessToken,
         );
