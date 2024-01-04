@@ -299,7 +299,7 @@ public class DocumentController : ControllerBase
 
         await messageRelayHubContext.Clients.All.SendAsync(
             GlobalDocumentDeletedClientCall,
-            documentMessageContent.ToFormattedStringNamesOnly(),
+            memoryId.ToString(),
             this._authInfo.Name
         );
 
