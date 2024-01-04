@@ -180,7 +180,12 @@ const registerSignalREvents = (hubConnection: signalR.HubConnection, store: Stor
     });
 
     hubConnection.on(SignalRCallbackMethods.GlobalDocumentDeleted, (documentId: string, userName: string) => {
-        store.dispatch(addAlert({ message: `${userName} deleted document ${documentId} from global memory`, type: AlertType.Info }));
+        store.dispatch(
+            addAlert({
+                message: `${userName} deleted document ${documentId} from global memory`,
+                type: AlertType.Info,
+            }),
+        );
     });
 
     hubConnection.on(SignalRCallbackMethods.ChatEdited, (chat: ChatState) => {

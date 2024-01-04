@@ -30,14 +30,11 @@ export class DocumentImportService extends BaseService {
         );
     };
 
-    public deleteDocumentAsync = async (
-        chatId: string,
-        documentId: string,
-        accessToken: string
-    ) => {
+    public deleteDocumentAsync = async (chatId: string, documentId: string, accessToken: string) => {
         return await this.getResponseAsync<IChatMessage>(
             {
-                commandPath: (chatId === EmptyGuid) ? `documents/${documentId}` : `chats/${chatId}/documents/${documentId}`,
+                commandPath:
+                    chatId === EmptyGuid ? `documents/${documentId}` : `chats/${chatId}/documents/${documentId}`,
                 method: 'DELETE',
             },
             accessToken,
