@@ -359,7 +359,9 @@ export const DocumentsTab: React.FC = () => {
 
                 renderCell: (item) => {
                     return (
-                        <TableCellLayout truncate>{<TimeAgo datetime={item.lastUpdated.timestamp} />}</TableCellLayout>
+                        <TableCellLayout truncate>
+                            {<TimeAgo datetime={item.lastUpdated.timestamp} live="false" />}
+                        </TableCellLayout>
                     );
                 },
             }),
