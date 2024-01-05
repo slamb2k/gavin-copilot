@@ -1,7 +1,14 @@
 // Copyright (c) Microsoft. All rights reserved.
 
 import {
+    Avatar,
     Button,
+    DataGrid,
+    DataGridBody,
+    DataGridCell,
+    DataGridHeader,
+    DataGridHeaderCell,
+    DataGridRow,
     Label,
     Menu,
     MenuItem,
@@ -12,26 +19,15 @@ import {
     Radio,
     RadioGroup,
     Spinner,
-    Table,
-    TableBody,
-    TableCell,
     TableCellLayout,
     TableColumnDefinition,
-    TableColumnId,
-    TableHeader,
-    TableHeaderCell,
-    TableHeaderCellProps,
-    TableRow,
     Tooltip,
     createTableColumn,
     makeStyles,
     shorthands,
     tokens,
-    useTableFeatures,
-    useTableSort,
 } from '@fluentui/react-components';
 import {
-    DeleteRegular,
     DocumentArrowUp20Regular,
     DocumentPdfRegular,
     DocumentTextRegular,
@@ -40,6 +36,7 @@ import {
 } from '@fluentui/react-icons';
 import * as React from 'react';
 import { useRef } from 'react';
+import TimeAgo from 'timeago-react';
 import { Constants } from '../../../Constants';
 import { useChat, useFile } from '../../../libs/hooks';
 import { ChatMemorySource } from '../../../libs/models/ChatMemorySource';
@@ -49,7 +46,7 @@ import { Add20 } from '../../shared/BundledIcons';
 import { timestampToDateString } from '../../utils/TextUtils';
 import { TabView } from './TabView';
 
-const EmptyGuid = '00000000-0000-0000-0000-000000000000';
+// const EmptyGuid = '00000000-0000-0000-0000-000000000000';
 
 const useClasses = makeStyles({
     functional: {
@@ -78,19 +75,53 @@ const useClasses = makeStyles({
     },
 });
 
-interface TableItem {
+// interface TableItem {
+//     id: string;
+//     chatId: string;
+//     name: {
+//         label: string;
+//         icon: JSX.Element;
+//         url?: string;
+//     };
+//     createdOn: {
+//         label: string;
+//         timestamp: number;
+//     };
+//     size: number;
+// }
+
+interface FileCell {
+    label: string;
+    icon: JSX.Element;
+}
+
+interface SizeCell {
+    label: string;
+    size: number;
+}
+
+interface UpdatedByCell {
+    label: string;
+}
+
+interface LastUpdatedCell {
+    label: string;
+    timestamp: number;
+}
+
+interface StatusCell {
+    label: string;
+    progress: number;
+}
+
+interface Item {
     id: string;
     chatId: string;
-    name: {
-        label: string;
-        icon: JSX.Element;
-        url?: string;
-    };
-    createdOn: {
-        label: string;
-        timestamp: number;
-    };
-    size: number;
+    file: FileCell;
+    size: SizeCell;
+    updatedBy: UpdatedByCell;
+    lastUpdated: LastUpdatedCell;
+    status: StatusCell;
 }
 
 export const DocumentsTab: React.FC = () => {
@@ -131,11 +162,11 @@ export const DocumentsTab: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [importingDocuments, selectedId]);
 
-    const onDeleteDocument = (chatId: string, documentId: string) => {
-        void fileHandler.deleteDocument(chatId, documentId);
-    };
+    // const onDeleteDocument = (chatId: string, documentId: string) => {
+    //     void fileHandler.deleteDocument(chatId, documentId);
+    // };
 
-    const { columns, rows } = useTable(resources, onDeleteDocument);
+    //const { columns, rows } = useTable(resources, onDeleteDocument);
     return (
         <TabView
             title="Documents"
@@ -230,192 +261,198 @@ export const DocumentsTab: React.FC = () => {
                     </RadioGroup>
                 </div>
             </div>
-            <Table aria-label="External resource table" className={classes.table}>
-                <TableHeader>
-                    <TableRow>{columns.map((column) => column.renderHeaderCell())}</TableRow>
-                </TableHeader>
-                <TableBody>
-                    {rows.map((item) => (
-                        <TableRow key={item.id}>{columns.map((column) => column.renderCell(item))}</TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+            {useGrid(resources)}
         </TabView>
     );
+
+    function useGrid(resources: ChatMemorySource[]) {
+        const items = resources.map(
+            (source) =>
+                ({
+                    id: source.id,
+                    chatId: selectedId,
+                    file: { label: source.name, icon: getFileIconByFileExtension(source.name) },
+                    size: { label: source.size.toString(), size: source.size },
+                    updatedBy: { label: 'System Administrator' },
+                    lastUpdated: {
+                        label: timestampToDateString(source.createdOn),
+                        timestamp: source.createdOn,
+                    },
+                    status: { label: 'In Progress', progress: 1 },
+                }) as Item,
+        );
+
+        const columns: Array<TableColumnDefinition<Item>> = [
+            createTableColumn<Item>({
+                columnId: 'file',
+                compare: (a, b) => {
+                    return a.file.label.localeCompare(b.file.label);
+                },
+                renderHeaderCell: () => {
+                    return 'File';
+                },
+                renderCell: (item) => {
+                    return (
+                        <TableCellLayout truncate media={item.file.icon}>
+                            {item.file.label}
+                        </TableCellLayout>
+                    );
+                },
+            }),
+            createTableColumn<Item>({
+                columnId: 'size',
+                compare: (a, b) => {
+                    return a.size.label.localeCompare(b.size.label);
+                },
+                renderHeaderCell: () => {
+                    return 'Size';
+                },
+                renderCell: (item) => {
+                    return <TableCellLayout>{humanFileSize(item.size.size)}</TableCellLayout>;
+                },
+            }),
+            createTableColumn<Item>({
+                columnId: 'updatedBy',
+                compare: (a, b) => {
+                    return a.updatedBy.label.localeCompare(b.updatedBy.label);
+                },
+                renderHeaderCell: () => {
+                    return 'Updated By';
+                },
+                renderCell: (item) => {
+                    return (
+                        <TableCellLayout
+                            truncate
+                            media={
+                                <Avatar
+                                    aria-label={item.updatedBy.label}
+                                    name={item.updatedBy.label}
+                                    // badge={{ status: item.updatedBy.status }}
+                                />
+                            }
+                        >
+                            {item.updatedBy.label}
+                        </TableCellLayout>
+                    );
+                },
+            }),
+            createTableColumn<Item>({
+                columnId: 'lastUpdated',
+                compare: (a, b) => {
+                    return a.lastUpdated.label.localeCompare(b.lastUpdated.label);
+                },
+                renderHeaderCell: () => {
+                    return 'Last updated';
+                },
+
+                renderCell: (item) => {
+                    return (
+                        <TableCellLayout truncate>{<TimeAgo datetime={item.lastUpdated.timestamp} />}</TableCellLayout>
+                    );
+                },
+            }),
+            createTableColumn<Item>({
+                columnId: 'status',
+                compare: (a, b) => {
+                    return a.status.label.localeCompare(b.status.label);
+                },
+                renderHeaderCell: () => {
+                    return 'Status';
+                },
+                renderCell: (item) => {
+                    return (
+                        <TableCellLayout truncate>
+                            {item.status.progress > 0 && (
+                                <ProgressBar max={1} value={item.status.progress} shape="rounded" thickness="large" />
+                            )}
+                            {item.status.label}
+                        </TableCellLayout>
+                    );
+                },
+            }),
+        ];
+
+        return (
+            <DataGrid
+                items={items}
+                ref={(el) => {
+                    console.log('__Ref', el);
+                }}
+                columns={columns}
+                sortable
+                getRowId={(item: Item) => item.file.label}
+                selectionMode="multiselect"
+                onSelectionChange={(_, data) => {
+                    console.log(data);
+                }}
+                resizableColumns
+                columnSizingOptions={{
+                    file: {
+                        minWidth: 200,
+                        defaultWidth: 500,
+                        idealWidth: 500,
+                    },
+                    updatedBy: {
+                        defaultWidth: 200,
+                        minWidth: 100,
+                        idealWidth: 200,
+                    },
+                    lastUpdated: {
+                        defaultWidth: 200,
+                        minWidth: 100,
+                        idealWidth: 200,
+                    },
+                }}
+                onColumnResize={(event, { columnId, width }) => {
+                    if (event instanceof MouseEvent) {
+                        console.log(event.offsetX, event.offsetY, columnId, width);
+                    }
+                }}
+            >
+                <DataGridHeader>
+                    <DataGridRow selectionCell={{ 'aria-label': 'Select all rows' }}>
+                        {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
+                    </DataGridRow>
+                </DataGridHeader>
+                <DataGridBody<Item>>
+                    {({ item, rowId }) => (
+                        <DataGridRow<Item> key={rowId} selectionCell={{ 'aria-label': 'Select row' }}>
+                            {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
+                        </DataGridRow>
+                    )}
+                </DataGridBody>
+            </DataGrid>
+        );
+    }
 };
 
-function useTable(resources: ChatMemorySource[], onDeleteDocument: (chatId: string, documentId: string) => void) {
-    const headerSortProps = (columnId: TableColumnId): TableHeaderCellProps => ({
-        onClick: (e: React.MouseEvent) => {
-            toggleColumnSort(e, columnId);
-        },
-        sortDirection: getSortDirection(columnId),
-    });
+//     const {
+//         sort: { getSortDirection, toggleColumnSort, sortColumn },
+//     } = useTableFeatures(
+//         {
+//             columns,
+//             items,
+//         },
+//         [
+//             useTableSort({
+//                 defaultSortState: { sortColumn: 'createdOn', sortDirection: 'descending' },
+//             }),
+//         ],
+//     );
 
-    const columns: Array<TableColumnDefinition<TableItem>> = [
-        createTableColumn<TableItem>({
-            columnId: 'name',
-            renderHeaderCell: () => (
-                <TableHeaderCell key="name" {...headerSortProps('name')}>
-                    Name
-                </TableHeaderCell>
-            ),
-            renderCell: (item) => (
-                <TableCell key={item.id}>
-                    <TableCellLayout media={item.name.icon} truncate>
-                        <a href={item.name.url} title={item.name.label}>
-                            {item.name.label}
-                        </a>
-                    </TableCellLayout>
-                </TableCell>
-            ),
-            compare: (a, b) => {
-                const comparison = a.name.label.localeCompare(b.name.label);
-                return getSortDirection('name') === 'ascending' ? comparison : comparison * -1;
-            },
-        }),
-        createTableColumn<TableItem>({
-            columnId: 'createdOn',
-            renderHeaderCell: () => (
-                <TableHeaderCell key="createdOn" {...headerSortProps('createdOn')}>
-                    Created on
-                </TableHeaderCell>
-            ),
-            renderCell: (item) => (
-                <TableCell key={item.createdOn.timestamp} title={new Date(item.createdOn.timestamp).toLocaleString()}>
-                    {item.id.startsWith('in-progress') ? 'N/A' : item.createdOn.label}
-                </TableCell>
-            ),
-            compare: (a, b) => {
-                const comparison = a.createdOn.timestamp > b.createdOn.timestamp ? 1 : -1;
-                return getSortDirection('createdOn') === 'ascending' ? comparison : comparison * -1;
-            },
-        }),
-        createTableColumn<TableItem>({
-            columnId: 'fileSize',
-            renderHeaderCell: () => (
-                <TableHeaderCell key="fileSize" {...headerSortProps('fileSize')}>
-                    Size (bytes)
-                </TableHeaderCell>
-            ),
-            renderCell: (item) => (
-                <TableCell key={`${item.id}-tokens`}>
-                    {item.id.startsWith('in-progress') ? 'N/A' : item.size.toLocaleString()}
-                </TableCell>
-            ),
-            compare: (a, b) => {
-                const aAccess = getAccessString(a.chatId);
-                const bAccess = getAccessString(b.chatId);
-                const comparison = aAccess.localeCompare(bAccess);
-                return getSortDirection('fileSize') === 'ascending' ? comparison : comparison * -1;
-            },
-        }),
-        createTableColumn<TableItem>({
-            columnId: 'access',
-            renderHeaderCell: () => (
-                <TableHeaderCell key="access" {...headerSortProps('access')}>
-                    Access
-                </TableHeaderCell>
-            ),
-            renderCell: (item) => (
-                <TableCell key={`${item.id} ${item.name.label}`}>{getAccessString(item.chatId)}</TableCell>
-            ),
-            compare: (a, b) => {
-                const aAccess = getAccessString(a.chatId);
-                const bAccess = getAccessString(b.chatId);
-                const comparison = aAccess.localeCompare(bAccess);
-                return getSortDirection('access') === 'ascending' ? comparison : comparison * -1;
-            },
-        }),
-        createTableColumn<TableItem>({
-            columnId: 'progress',
-            renderHeaderCell: () => (
-                <TableHeaderCell key="progress" {...headerSortProps('progress')}>
-                    Progress
-                </TableHeaderCell>
-            ),
-            renderCell: (item) => (
-                <TableCell key={`${item.id}-progress`}>
-                    <ProgressBar
-                        max={1}
-                        value={item.id.startsWith('in-progress') ? undefined : 1} // Hack: tokens stores the progress bar percentage.
-                        shape="rounded"
-                        thickness="large"
-                        color={item.id.startsWith('in-progress') ? 'brand' : 'success'}
-                    />
-                </TableCell>
-            ),
-            compare: (a, b) => {
-                const aAccess = getAccessString(a.chatId);
-                const bAccess = getAccessString(b.chatId);
-                const comparison = aAccess.localeCompare(bAccess);
-                return getSortDirection('progress') === 'ascending' ? comparison : comparison * -1;
-            },
-        }),
-        createTableColumn<TableItem>({
-            columnId: 'delete',
-            renderHeaderCell: () => <TableHeaderCell key="delete" {...headerSortProps('delete')}></TableHeaderCell>,
-            renderCell: (item) => (
-                <TableCell key={`${item.id}-delete`}>
-                    <Button
-                        icon={<DeleteRegular />}
-                        onClick={() => {
-                            onDeleteDocument(item.chatId, item.id);
-                        }}
-                    />
-                </TableCell>
-            ),
-            compare: (a, b) => {
-                const aAccess = getAccessString(a.chatId);
-                const bAccess = getAccessString(b.chatId);
-                const comparison = aAccess.localeCompare(bAccess);
-                return getSortDirection('progress') === 'ascending' ? comparison : comparison * -1;
-            },
-        }),
-    ];
+//     if (sortColumn) {
+//         items.sort((a, b) => {
+//             const compare = columns.find((column) => column.columnId === sortColumn)?.compare;
+//             return compare?.(a, b) ?? 0;
+//         });
+//     }
 
-    const items = resources.map((item) => ({
-        id: item.id,
-        chatId: item.chatId,
-        name: {
-            label: item.name,
-            icon: getFileIconByFileExtension(item.name),
-            url: item.hyperlink,
-        },
-        createdOn: {
-            label: timestampToDateString(item.createdOn),
-            timestamp: item.createdOn,
-        },
-        size: item.size,
-    }));
+//     return { columns, rows: items };
+// }
 
-    const {
-        sort: { getSortDirection, toggleColumnSort, sortColumn },
-    } = useTableFeatures(
-        {
-            columns,
-            items,
-        },
-        [
-            useTableSort({
-                defaultSortState: { sortColumn: 'createdOn', sortDirection: 'descending' },
-            }),
-        ],
-    );
-
-    if (sortColumn) {
-        items.sort((a, b) => {
-            const compare = columns.find((column) => column.columnId === sortColumn)?.compare;
-            return compare?.(a, b) ?? 0;
-        });
-    }
-
-    return { columns, rows: items };
-}
-
-function getAccessString(chatId: string) {
-    return chatId === EmptyGuid ? 'Global' : 'This chat';
-}
+// function getAccessString(chatId: string) {
+//     return chatId === EmptyGuid ? 'Global' : 'This chat';
+// }
 
 export function getFileIconByFileExtension(fileName: string, props: FluentIconsProps = {}) {
     const extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.') + 1);
@@ -423,4 +460,35 @@ export function getFileIconByFileExtension(fileName: string, props: FluentIconsP
         return <DocumentPdfRegular {...props} />;
     }
     return <DocumentTextRegular {...props} />;
+}
+
+/**
+ * Format bytes as human-readable text.
+ *
+ * @param bytes Number of bytes.
+ * @param si True to use metric (SI) units, aka powers of 1000. False to use
+ *           binary (IEC), aka powers of 1024.
+ * @param dp Number of decimal places to display.
+ *
+ * @return Formatted string.
+ */
+function humanFileSize(bytes: number, si = false, dp = 1) {
+    const thresh = si ? 1000 : 1024;
+
+    if (Math.abs(bytes) < thresh) {
+        return bytes + ' B';
+    }
+
+    const units = si
+        ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+        : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+    let u = -1;
+    const r = 10 ** dp;
+
+    do {
+        bytes /= thresh;
+        ++u;
+    } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+
+    return bytes.toFixed(dp) + ' ' + units[u];
 }
