@@ -28,6 +28,7 @@ import {
     tokens,
 } from '@fluentui/react-components';
 import {
+    Delete20Regular,
     DocumentArrowUp20Regular,
     DocumentPdfRegular,
     DocumentTextRegular,
@@ -239,6 +240,17 @@ export const DocumentsTab: React.FC = () => {
                         </MenuList>
                     </MenuPopover>
                 </Menu>
+                <Tooltip content="Delete selected documents from memory" relationship="label">
+                    <Button
+                        className={classes.deleteButton}
+                        icon={<Delete20Regular />}
+                        disabled={
+                            conversations[selectedId].disabled || (importingDocuments && importingDocuments.length > 0)
+                        }
+                    >
+                        Delete
+                    </Button>
+                </Tooltip>
                 {importingDocuments && importingDocuments.length > 0 && <Spinner size="tiny" />}
                 {/* Hardcode vector database as we don't support switching vector store dynamically now. */}
                 <div className={classes.vectorDatabase}>
