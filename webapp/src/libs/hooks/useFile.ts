@@ -29,7 +29,7 @@ export const useFile = () => {
                     await loadCallBack(parsedData);
                     resolve(parsedData);
                 } catch (e) {
-                    reject(e);
+                    reject(new Error('Failed to load file'));
                 }
             };
             fileReader.onerror = reject;
