@@ -154,6 +154,7 @@ export const initialState: AppState = {
         availablePlugins: [],
         version: '',
         isContentSafetyEnabled: false,
+        isDeleteDocumentEnabled: false,
     },
     isMaintenance: false,
 };

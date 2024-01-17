@@ -4,8 +4,6 @@ import { Citation, IChatMessage } from '../models/ChatMessage';
 import { ServiceInfo } from '../models/ServiceInfo';
 import { BaseService } from './BaseService';
 
-const EmptyGuid = '00000000-0000-0000-0000-000000000000';
-
 export class DocumentImportService extends BaseService {
     public importDocumentAsync = async (
         chatId: string,
@@ -31,10 +29,9 @@ export class DocumentImportService extends BaseService {
     };
 
     public deleteDocumentAsync = async (chatId: string, documentId: string, accessToken: string) => {
-        return await this.getResponseAsync<IChatMessage>(
+        return await this.getResponseAsync<string>(
             {
-                commandPath:
-                    chatId === EmptyGuid ? `documents/${documentId}` : `chats/${chatId}/documents/${documentId}`,
+                commandPath: chatId ? `documents/${documentId}` : `chats/${chatId}/documents/${documentId}`,
                 method: 'DELETE',
             },
             accessToken,
