@@ -6,6 +6,7 @@ using System.Data;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CopilotChat.WebApi.Auth;
 using CopilotChat.WebApi.Extensions;
@@ -124,6 +125,52 @@ public class DocumentController : ControllerBase
             documentImportForm);
     }
 
+    /// <summary>
+    /// Service API for removing a document.
+    /// Documents imported through this route will be considered as global documents.
+    /// </summary>
+    [Route("documents/{documentId}")]
+    [HttpDelete]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public Task<IActionResult> DocumentRemoveAsync(
+        [FromServices] IKernelMemory memoryClient,
+        [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
+        [FromRoute] Guid documentId,
+        CancellationToken cancellationToken)
+    {
+        return this.DocumentRemoveAsync(
+            memoryClient,
+            messageRelayHubContext,
+            DocumentScopes.Global,
+            DocumentMemoryOptions.GlobalDocumentChatId,
+            documentId,
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Service API for removing a document.
+    /// </summary>
+    [Route("chats/{chatId}/documents/{documentId}")]
+    [HttpDelete]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public Task<IActionResult> DocumentRemoveAsync(
+        [FromServices] IKernelMemory memoryClient,
+        [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
+        [FromRoute] Guid chatId,
+        [FromRoute] Guid documentId,
+        CancellationToken cancellationToken)
+    {
+        return this.DocumentRemoveAsync(
+            memoryClient,
+            messageRelayHubContext,
+            DocumentScopes.Chat,
+            chatId,
+            documentId,
+            cancellationToken);
+    }
+
     [Route("documents/getcitation")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -214,42 +261,66 @@ public class DocumentController : ControllerBase
         return this.Ok(chatMessage);
     }
 
-    [Route("documents/{documentId}")]
-    [HttpDelete]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public Task<IActionResult> DocumentDeleteAsync(
-    [FromServices] IKernelMemory memoryClient,
-    [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
-    [FromRoute] Guid documentId)
+    private async Task<IActionResult> DocumentRemoveAsync(
+        IKernelMemory memoryClient,
+        IHubContext<MessageRelayHub> messageRelayHubContext,
+        DocumentScopes documentScope,
+        Guid chatId,
+        Guid documentId,
+        CancellationToken cancellationToken)
     {
-        return this.DocumentDeletionAsync(
-            memoryClient,
-            messageRelayHubContext,
-            DocumentScopes.Global,
-            DocumentMemoryOptions.GlobalDocumentChatId,
-            documentId
-        );
+        if (!this._options.AllowDocumentRemoval)
+        {
+            return this.BadRequest("Document removal not enabled.");
+        }
+
+        // First remove the document embeddings.
+        await memoryClient.RemoveDocumentAsync(this._promptOptions.DocumentMemoryName, documentId.ToString(), cancellationToken);
+
+        // $$$ REMOVE CITED MESSAGES ???
+
+        // Then remove the memory source.  This ensures that delete may be re-attempted on exception.
+        await this._sourceRepository.DeleteAsync(documentId.ToString(), chatId.ToString());
+
+        return this.Ok();
     }
 
-    [Route("chats/{chatId}/documents/{documentId}")]
-    [HttpDelete]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public Task<IActionResult> DocumentDeleteAsync(
-    [FromServices] IKernelMemory memoryClient,
-    [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
-    [FromRoute] Guid chatId,
-    [FromRoute] Guid documentId)
-    {
-        return this.DocumentDeletionAsync(
-            memoryClient,
-            messageRelayHubContext,
-            DocumentScopes.Chat,
-            chatId,
-            documentId
-        );
-    }
+    // [Route("documents/{documentId}")]
+    // [HttpDelete]
+    // [ProducesResponseType(StatusCodes.Status200OK)]
+    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    // public Task<IActionResult> DocumentDeleteAsync(
+    // [FromServices] IKernelMemory memoryClient,
+    // [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
+    // [FromRoute] Guid documentId)
+    // {
+    //     return this.DocumentDeletionAsync(
+    //         memoryClient,
+    //         messageRelayHubContext,
+    //         DocumentScopes.Global,
+    //         DocumentMemoryOptions.GlobalDocumentChatId,
+    //         documentId
+    //     );
+    // }
+
+    // [Route("chats/{chatId}/documents/{documentId}")]
+    // [HttpDelete]
+    // [ProducesResponseType(StatusCodes.Status200OK)]
+    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    // public Task<IActionResult> DocumentDeleteAsync(
+    // [FromServices] IKernelMemory memoryClient,
+    // [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
+    // [FromRoute] Guid chatId,
+    // [FromRoute] Guid documentId)
+    // {
+    //     return this.DocumentDeletionAsync(
+    //         memoryClient,
+    //         messageRelayHubContext,
+    //         DocumentScopes.Chat,
+    //         chatId,
+    //         documentId
+    //     );
+    // }
 
     private async Task<IActionResult> DocumentDeletionAsync(
         IKernelMemory memoryClient,

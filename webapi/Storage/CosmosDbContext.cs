@@ -56,21 +56,32 @@ public class CosmosDbContext<T> : IStorageContext<T>, IDisposable where T : ISto
     {
         if (string.IsNullOrWhiteSpace(entity.Id))
         {
-            throw new ArgumentOutOfRangeException(nameof(entity.Id), "Entity Id cannot be null or empty.");
+            throw new ArgumentException("Entity Id cannot be null or empty.", nameof(entity));
         }
 
         await this._container.CreateItemAsync(entity, new PartitionKey(entity.Partition));
     }
 
     /// <inheritdoc/>
-    public async Task DeleteAsync(T entity)
+    public Task DeleteAsync(T entity)
     {
-        if (string.IsNullOrWhiteSpace(entity.Id))
+        return this.DeleteAsync(entity.Id, entity.Partition);
+    }
+
+    /// <inheritdoc/>
+    public async Task DeleteAsync(string entityId, string partitionKey)
+    {
+        if (string.IsNullOrWhiteSpace(entityId))
         {
-            throw new ArgumentOutOfRangeException(nameof(entity.Id), "Entity Id cannot be null or empty.");
+            throw new ArgumentNullException(nameof(entityId), "Entity id cannot be null or empty.");
         }
 
-        await this._container.DeleteItemAsync<T>(entity.Id, new PartitionKey(entity.Partition));
+        if (string.IsNullOrWhiteSpace(partitionKey))
+        {
+            throw new ArgumentNullException(nameof(entityId), "Entity partition cannot be null or empty.");
+        }
+
+        await this._container.DeleteItemAsync<T>(entityId, new PartitionKey(partitionKey));
     }
 
     /// <inheritdoc/>
@@ -78,7 +89,7 @@ public class CosmosDbContext<T> : IStorageContext<T>, IDisposable where T : ISto
     {
         if (string.IsNullOrWhiteSpace(entityId))
         {
-            throw new ArgumentOutOfRangeException(nameof(entityId), "Entity Id cannot be null or empty.");
+            throw new ArgumentNullException(nameof(entityId), "Entity Id cannot be null or empty.");
         }
 
         try
@@ -97,7 +108,7 @@ public class CosmosDbContext<T> : IStorageContext<T>, IDisposable where T : ISto
     {
         if (string.IsNullOrWhiteSpace(entity.Id))
         {
-            throw new ArgumentOutOfRangeException(nameof(entity.Id), "Entity Id cannot be null or empty.");
+            throw new ArgumentException("Entity Id cannot be null or empty.", nameof(entity));
         }
 
         await this._container.UpsertItemAsync(entity, new PartitionKey(entity.Partition));

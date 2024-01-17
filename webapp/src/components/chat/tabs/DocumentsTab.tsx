@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */ // $$$
 // Copyright (c) Microsoft. All rights reserved.
 
 import {
@@ -167,7 +168,18 @@ export const DocumentsTab: React.FC = () => {
     //     void fileHandler.deleteDocument(chatId, documentId);
     // };
 
-    //const { columns, rows } = useTable(resources, onDeleteDocument);
+    //const handleDelete = async (chatId: string, documentId: string) => {
+    //     try {
+    //         await fileHandler.deleteDocument(chatId, documentId);
+    //         // Update the state immediately after deleting the file
+    //         setResources((prevResources) => prevResources.filter((resource) => resource.id !== documentId));
+    //     } catch (error) {
+    //         console.error('Failed to delete the file:', error);
+    //     }
+    // };
+
+    // const { columns, rows } = useTable(resources, handleDelete, onDeleteDocument);
+
     return (
         <TabView
             title="Documents"
@@ -360,7 +372,7 @@ export const DocumentsTab: React.FC = () => {
                 renderCell: (item) => {
                     return (
                         <TableCellLayout truncate>
-                            {<TimeAgo datetime={item.lastUpdated.timestamp} live="false" />}
+                            {<TimeAgo datetime={item.lastUpdated.timestamp} live={false} />}
                         </TableCellLayout>
                     );
                 },
