@@ -34,7 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 export function renderApp() {
     fetch(new URL('authConfig', BackendServiceUrl))
-        .then((response) => (response.ok ? (response.json() as Promise<AuthConfig>) : Promise.reject()))
+        .then((response) =>
+            response.ok
+                ? (response.json() as Promise<AuthConfig>)
+                : Promise.reject(new Error('Failed to fetch authConfig')),
+        )
         .then((authConfig) => {
             store.dispatch(setAuthConfig(authConfig));
 
