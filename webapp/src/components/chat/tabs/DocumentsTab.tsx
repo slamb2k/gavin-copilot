@@ -25,8 +25,9 @@ import {
     DocumentTextRegular,
     FluentIconsProps,
     GlobeAdd20Regular,
+    Search20Regular,
 } from '@fluentui/react-icons';
-import { ColDef } from 'ag-grid-community';
+import { ColDef, IDetailCellRendererParams } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react/lib/agGridReact';
 import React, { useMemo, useRef, useState } from 'react';
 import { Constants } from '../../../Constants';
@@ -39,6 +40,13 @@ import { TabView } from './TabView';
 
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
+import TimeAgo from 'javascript-time-ago';
+import en from 'javascript-time-ago/locale/en-AU';
+
+TimeAgo.addDefaultLocale(en);
+
+// Create formatter (English).
+const timeAgo = new TimeAgo('en-AU');
 
 const EmptyGuid = '00000000-0000-0000-0000-000000000000';
 
@@ -83,8 +91,6 @@ export const DocumentsTab: React.FC = () => {
     const [selected, setSelected] = React.useState(new Set<TableRowId>([1]));
     const localDocumentFileRef = useRef<HTMLInputElement | null>(null);
     const globalDocumentFileRef = useRef<HTMLInputElement | null>(null);
-
-    //import en from 'javascript-time-ago/locale/en';
 
     const handleDelete = async (documentId: string, fileName: string, chatId: string) => {
         try {
@@ -224,7 +230,11 @@ export const DocumentsTab: React.FC = () => {
         const gridStyle = useMemo(() => ({ height: '100%', width: '100%' }), []);
         const [rowData, setRowData] = useState<ChatMemorySource[]>([]);
         const columnDefs: ColDef[] = [
-            { headerName: 'Filename', field: 'name' },
+            {
+                headerName: 'Filename',
+                field: 'name',
+                minWidth: 400,
+            },
             {
                 headerName: 'Size',
                 field: 'size',
@@ -234,16 +244,41 @@ export const DocumentsTab: React.FC = () => {
             {
                 headerName: 'Last Updated',
                 field: 'createdOn',
-                valueGetter: (params) => (params.data as { createdOn: Date }).createdOn.toDateString(),
+                valueGetter: (params) => getTimeAgo((params.data as { createdOn: string }).createdOn),
             },
             {
                 headerName: 'Access',
                 field: 'chatId',
                 valueGetter: (params) => getAccessString((params.data as { chatId: string }).chatId),
             },
-            { headerName: 'Status', field: 'sourceType' },
-            { headerName: 'Query', field: 'isQueryable', width: 40 },
-            { headerName: 'Delete', field: 'isQueryable', width: 40 },
+            {
+                headerName: 'Status',
+                valueGetter: () => 'Ready',
+            },
+            {
+                headerName: 'Query',
+                field: 'isQueryable',
+                maxWidth: 90,
+                cellRenderer: (params: IDetailCellRendererParams) => {
+                    if (params.value === true) {
+                        return <Search20Regular />;
+                    } else {
+                        return null;
+                    }
+                },
+            },
+            {
+                headerName: 'Delete',
+                maxWidth: 90,
+                cellRenderer: () => {
+                    return <Delete20Regular />;
+                },
+                cellStyle: () => ({
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }),
+            },
         ];
 
         const defaultColDef = useMemo(() => {
@@ -253,6 +288,10 @@ export const DocumentsTab: React.FC = () => {
                 width: 200,
                 minWidth: 200,
                 filter: true,
+                cellStyle: () => ({
+                    display: 'flex',
+                    alignItems: 'center',
+                }),
             };
         }, []);
 
@@ -298,6 +337,11 @@ export const DocumentsTab: React.FC = () => {
         );
     }
 };
+
+function getTimeAgo(date: string) {
+    //return new Date(date).toDateString();
+    return timeAgo.format(new Date(date));
+}
 
 function getAccessString(chatId: string) {
     return chatId === EmptyGuid ? 'Global' : 'This chat';
