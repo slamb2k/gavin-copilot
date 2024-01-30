@@ -53,6 +53,11 @@ public class CopilotChatMessage : IStorageEntity
         /// An uploaded document notification
         /// </summary>
         Document,
+
+        /// <summary>
+        /// An document memory removal notification
+        /// </summary>
+        DocumentRemoval,
     }
 
     /// <summary>
@@ -209,6 +214,14 @@ public class CopilotChatMessage : IStorageEntity
                 var documentMessageContent = (documentMessage != null) ? documentMessage.ToFormattedString() : "documents";
 
                 return $"{messagePrefix} {this.UserName} uploaded: {documentMessageContent}";
+            }
+
+            case ChatMessageType.DocumentRemoval:
+            {
+                var documentMessage = DocumentMessageContent.FromString(this.Content);
+                var documentMessageContent = (documentMessage != null) ? documentMessage.ToFormattedString() : "documents";
+
+                return $"{messagePrefix} {this.UserName} document removal: {documentMessageContent}";
             }
 
             case ChatMessageType.Message:

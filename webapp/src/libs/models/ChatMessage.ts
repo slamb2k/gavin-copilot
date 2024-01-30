@@ -29,6 +29,9 @@ export enum ChatMessageType {
 
     // A message showing an uploaded document
     Document,
+
+    // A message showing a document removal
+    DocumentRemoval,
 }
 
 /**
@@ -68,4 +71,13 @@ export interface IChatMessage {
     // TODO: [Issue #42] Persistent RLHF
     userFeedback?: UserFeedback;
     tokenUsage?: TokenUsage;
+}
+
+/**
+ * Citation for the response
+ */
+export interface DocumentRemoval {
+    id: string;
+    fileName: string;
+    chatId: string;
 }

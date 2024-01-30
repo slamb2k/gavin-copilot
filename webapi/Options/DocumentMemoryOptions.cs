@@ -63,4 +63,9 @@ public class DocumentMemoryOptions
     /// Determines if individual documents can be removed.
     /// </summary>
     public bool AllowDocumentRemoval { get; set; }
+
+    /// <summary>
+    /// Determines if individual documents can be queried.
+    /// </summary>
+    public bool AllowDocumentQuerying { get; set; }
 }

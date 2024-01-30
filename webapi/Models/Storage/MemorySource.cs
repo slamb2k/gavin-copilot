@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
+using System.Linq;
 using System.Text.Json.Serialization;
 using CopilotChat.WebApi.Storage;
 
@@ -20,6 +21,8 @@ public enum MemorySourceType
 /// </summary>
 public class MemorySource : IStorageEntity
 {
+    private static string[] QueryableFileTypes = new[] { ".xls", ".xlsx", ".csv", ".tsv" };
+
     /// <summary>
     /// Source ID that is persistent and unique.
     /// </summary>
@@ -74,6 +77,19 @@ public class MemorySource : IStorageEntity
     /// </summary>
     [JsonPropertyName("tokens")]
     public long Tokens { get; set; } = 0;
+
+    /// <summary>
+    /// Whether the file type can be individually loaded and queried.
+    /// </summary>
+    [JsonPropertyName("isQueryable")]
+    public bool IsQueryable
+    {
+        get
+        {
+            return MemorySource.QueryableFileTypes
+                .Any(q => this.Name.EndsWith(q, System.StringComparison.InvariantCulture));
+        }
+    }
 
     /// <summary>
     /// The partition key for the source.

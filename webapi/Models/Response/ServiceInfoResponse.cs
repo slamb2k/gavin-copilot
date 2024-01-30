@@ -41,6 +41,12 @@ public class ServiceInfoResponse
     /// </summary>
     [JsonPropertyName("isDeleteDocumentEnabled")]
     public bool IsDeleteDocumentEnabled { get; set; } = false;
+
+    /// <summary>
+    /// True if document querying enabled, false otherwise.
+    /// </summary>
+    [JsonPropertyName("isQueryDocumentEnabled")]
+    public bool IsQueryDocumentEnabled { get; set; } = false;
 }
 
 /// <summary>

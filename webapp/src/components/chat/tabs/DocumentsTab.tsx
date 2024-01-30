@@ -2,28 +2,18 @@
 // Copyright (c) Microsoft. All rights reserved.
 
 import {
-    Avatar,
     Button,
-    DataGrid,
-    DataGridBody,
-    DataGridCell,
-    DataGridHeader,
-    DataGridHeaderCell,
-    DataGridRow,
     Label,
     Menu,
     MenuItem,
     MenuList,
     MenuPopover,
     MenuTrigger,
-    ProgressBar,
     Radio,
     RadioGroup,
     Spinner,
-    TableCellLayout,
-    TableColumnDefinition,
+    TableRowId,
     Tooltip,
-    createTableColumn,
     makeStyles,
     shorthands,
     tokens,
@@ -36,19 +26,21 @@ import {
     FluentIconsProps,
     GlobeAdd20Regular,
 } from '@fluentui/react-icons';
-import * as React from 'react';
-import { useRef } from 'react';
-import TimeAgo from 'timeago-react';
+import { ColDef } from 'ag-grid-community';
+import { AgGridReact } from 'ag-grid-react/lib/agGridReact';
+import React, { useMemo, useRef, useState } from 'react';
 import { Constants } from '../../../Constants';
 import { useChat, useFile } from '../../../libs/hooks';
 import { ChatMemorySource } from '../../../libs/models/ChatMemorySource';
 import { useAppSelector } from '../../../redux/app/hooks';
 import { RootState } from '../../../redux/app/store';
 import { Add20 } from '../../shared/BundledIcons';
-import { timestampToDateString } from '../../utils/TextUtils';
 import { TabView } from './TabView';
 
-// const EmptyGuid = '00000000-0000-0000-0000-000000000000';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-quartz.css';
+
+const EmptyGuid = '00000000-0000-0000-0000-000000000000';
 
 const useClasses = makeStyles({
     functional: {
@@ -77,55 +69,6 @@ const useClasses = makeStyles({
     },
 });
 
-// interface TableItem {
-//     id: string;
-//     chatId: string;
-//     name: {
-//         label: string;
-//         icon: JSX.Element;
-//         url?: string;
-//     };
-//     createdOn: {
-//         label: string;
-//         timestamp: number;
-//     };
-//     size: number;
-// }
-
-interface FileCell {
-    label: string;
-    icon: JSX.Element;
-}
-
-interface SizeCell {
-    label: string;
-    size: number;
-}
-
-interface UpdatedByCell {
-    label: string;
-}
-
-interface LastUpdatedCell {
-    label: string;
-    timestamp: number;
-}
-
-interface StatusCell {
-    label: string;
-    progress: number;
-}
-
-interface Item {
-    id: string;
-    chatId: string;
-    file: FileCell;
-    size: SizeCell;
-    updatedBy: UpdatedByCell;
-    lastUpdated: LastUpdatedCell;
-    status: StatusCell;
-}
-
 export const DocumentsTab: React.FC = () => {
     const classes = useClasses();
     const chat = useChat();
@@ -133,52 +76,37 @@ export const DocumentsTab: React.FC = () => {
 
     const { serviceInfo } = useAppSelector((state: RootState) => state.app);
     const { conversations, selectedId } = useAppSelector((state: RootState) => state.conversations);
+
     const { importingDocuments } = conversations[selectedId];
 
     const [resources, setResources] = React.useState<ChatMemorySource[]>([]);
+    const [selected, setSelected] = React.useState(new Set<TableRowId>([1]));
     const localDocumentFileRef = useRef<HTMLInputElement | null>(null);
     const globalDocumentFileRef = useRef<HTMLInputElement | null>(null);
 
-    React.useEffect(() => {
-        if (!conversations[selectedId].disabled) {
-            const importingResources = importingDocuments
-                ? importingDocuments.map((document, index) => {
-                      return {
-                          id: `in-progress-${index}`,
-                          chatId: selectedId,
-                          sourceType: 'N/A',
-                          name: document,
-                          sharedBy: 'N/A',
-                          createdOn: 0,
-                          size: 0,
-                      } as ChatMemorySource;
-                  })
-                : [];
-            setResources(importingResources);
+    //import en from 'javascript-time-ago/locale/en';
 
-            void chat.getChatMemorySources(selectedId).then((sources) => {
-                setResources([...importingResources, ...sources]);
-            });
+    const handleDelete = async (documentId: string, fileName: string, chatId: string) => {
+        try {
+            await fileHandler.deleteDocument(documentId, fileName, chatId);
+            // Update the state immediately after deleting the file
+            setResources((prevResources) => prevResources.filter((resource) => resource.id !== documentId));
+        } catch (error) {
+            console.error('Failed to delete the file:', error);
         }
-        // We don't want to have chat as one of the dependencies as it will cause infinite loop.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [importingDocuments, selectedId]);
+    };
 
-    // const onDeleteDocument = (chatId: string, documentId: string) => {
-    //     void fileHandler.deleteDocument(chatId, documentId);
-    // };
-
-    //const handleDelete = async (chatId: string, documentId: string) => {
-    //     try {
-    //         await fileHandler.deleteDocument(chatId, documentId);
-    //         // Update the state immediately after deleting the file
-    //         setResources((prevResources) => prevResources.filter((resource) => resource.id !== documentId));
-    //     } catch (error) {
-    //         console.error('Failed to delete the file:', error);
-    //     }
-    // };
-
-    // const { columns, rows } = useTable(resources, handleDelete, onDeleteDocument);
+    const onDeleteClicked = async () => {
+        const promises = Array.from(selected).map((id) =>
+            handleDelete(
+                id.toString(),
+                resources.filter((resource) => resource.id === id)[0].name,
+                resources.filter((resource) => resource.id === id)[0].chatId,
+            ),
+        );
+        await Promise.all(promises);
+        setSelected(new Set<TableRowId>());
+    };
 
     return (
         <TabView
@@ -257,8 +185,10 @@ export const DocumentsTab: React.FC = () => {
                         className={classes.deleteButton}
                         icon={<Delete20Regular />}
                         disabled={
-                            conversations[selectedId].disabled || (importingDocuments && importingDocuments.length > 0)
+                            (!serviceInfo.isDeleteDocumentEnabled && conversations[selectedId].disabled) ||
+                            (importingDocuments && importingDocuments.length > 0)
                         }
+                        onClick={onDeleteClicked}
                     >
                         Delete
                     </Button>
@@ -285,200 +215,93 @@ export const DocumentsTab: React.FC = () => {
                     </RadioGroup>
                 </div>
             </div>
-            {useGrid(resources)}
+            {useGrid()}
         </TabView>
     );
 
-    function useGrid(resources: ChatMemorySource[]) {
-        const items = resources.map(
-            (source) =>
-                ({
-                    id: source.id,
-                    chatId: selectedId,
-                    file: { label: source.name, icon: getFileIconByFileExtension(source.name) },
-                    size: { label: source.size.toString(), size: source.size },
-                    updatedBy: { label: 'System Administrator' },
-                    lastUpdated: {
-                        label: timestampToDateString(source.createdOn),
-                        timestamp: source.createdOn,
-                    },
-                    status: { label: 'In Progress', progress: 1 },
-                }) as Item,
-        );
-
-        const columns: Array<TableColumnDefinition<Item>> = [
-            createTableColumn<Item>({
-                columnId: 'file',
-                compare: (a, b) => {
-                    return a.file.label.localeCompare(b.file.label);
-                },
-                renderHeaderCell: () => {
-                    return 'File';
-                },
-                renderCell: (item) => {
-                    return (
-                        <TableCellLayout truncate media={item.file.icon}>
-                            {item.file.label}
-                        </TableCellLayout>
-                    );
-                },
-            }),
-            createTableColumn<Item>({
-                columnId: 'size',
-                compare: (a, b) => {
-                    return a.size.label.localeCompare(b.size.label);
-                },
-                renderHeaderCell: () => {
-                    return 'Size';
-                },
-                renderCell: (item) => {
-                    return <TableCellLayout>{humanFileSize(item.size.size)}</TableCellLayout>;
-                },
-            }),
-            createTableColumn<Item>({
-                columnId: 'updatedBy',
-                compare: (a, b) => {
-                    return a.updatedBy.label.localeCompare(b.updatedBy.label);
-                },
-                renderHeaderCell: () => {
-                    return 'Updated By';
-                },
-                renderCell: (item) => {
-                    return (
-                        <TableCellLayout
-                            truncate
-                            media={
-                                <Avatar
-                                    aria-label={item.updatedBy.label}
-                                    name={item.updatedBy.label}
-                                    // badge={{ status: item.updatedBy.status }}
-                                />
-                            }
-                        >
-                            {item.updatedBy.label}
-                        </TableCellLayout>
-                    );
-                },
-            }),
-            createTableColumn<Item>({
-                columnId: 'lastUpdated',
-                compare: (a, b) => {
-                    return a.lastUpdated.label.localeCompare(b.lastUpdated.label);
-                },
-                renderHeaderCell: () => {
-                    return 'Last updated';
-                },
-
-                renderCell: (item) => {
-                    return (
-                        <TableCellLayout truncate>
-                            {<TimeAgo datetime={item.lastUpdated.timestamp} live={false} />}
-                        </TableCellLayout>
-                    );
-                },
-            }),
-            createTableColumn<Item>({
-                columnId: 'status',
-                compare: (a, b) => {
-                    return a.status.label.localeCompare(b.status.label);
-                },
-                renderHeaderCell: () => {
-                    return 'Status';
-                },
-                renderCell: (item) => {
-                    return (
-                        <TableCellLayout truncate>
-                            {item.status.progress > 0 && (
-                                <ProgressBar max={1} value={item.status.progress} shape="rounded" thickness="large" />
-                            )}
-                            {item.status.label}
-                        </TableCellLayout>
-                    );
-                },
-            }),
+    function useGrid() {
+        const gridRef = useRef(null);
+        const gridStyle = useMemo(() => ({ height: '100%', width: '100%' }), []);
+        const [rowData, setRowData] = useState<ChatMemorySource[]>([]);
+        const columnDefs: ColDef[] = [
+            { headerName: 'Filename', field: 'name' },
+            {
+                headerName: 'Size',
+                field: 'size',
+                valueGetter: (params) => humanFileSize((params.data as { size: number }).size),
+            },
+            { headerName: 'Updated By', field: 'sharedBy' },
+            {
+                headerName: 'Last Updated',
+                field: 'createdOn',
+                valueGetter: (params) => (params.data as { createdOn: Date }).createdOn.toDateString(),
+            },
+            {
+                headerName: 'Access',
+                field: 'chatId',
+                valueGetter: (params) => getAccessString((params.data as { chatId: string }).chatId),
+            },
+            { headerName: 'Status', field: 'sourceType' },
+            { headerName: 'Query', field: 'isQueryable', width: 40 },
+            { headerName: 'Delete', field: 'isQueryable', width: 40 },
         ];
 
+        const defaultColDef = useMemo(() => {
+            return {
+                editable: false,
+                flex: 1,
+                width: 200,
+                minWidth: 200,
+                filter: true,
+            };
+        }, []);
+
         return (
-            <DataGrid
-                items={items}
-                ref={(el) => {
-                    console.log('__Ref', el);
-                }}
-                columns={columns}
-                sortable
-                getRowId={(item: Item) => item.file.label}
-                selectionMode="multiselect"
-                onSelectionChange={(_, data) => {
-                    console.log(data);
-                }}
-                resizableColumns
-                columnSizingOptions={{
-                    file: {
-                        minWidth: 200,
-                        defaultWidth: 500,
-                        idealWidth: 500,
-                    },
-                    updatedBy: {
-                        defaultWidth: 200,
-                        minWidth: 100,
-                        idealWidth: 200,
-                    },
-                    lastUpdated: {
-                        defaultWidth: 200,
-                        minWidth: 100,
-                        idealWidth: 200,
-                    },
-                }}
-                onColumnResize={(event, { columnId, width }) => {
-                    if (event instanceof MouseEvent) {
-                        console.log(event.offsetX, event.offsetY, columnId, width);
-                    }
-                }}
-            >
-                <DataGridHeader>
-                    <DataGridRow selectionCell={{ 'aria-label': 'Select all rows' }}>
-                        {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
-                    </DataGridRow>
-                </DataGridHeader>
-                <DataGridBody<Item>>
-                    {({ item, rowId }) => (
-                        <DataGridRow<Item> key={rowId} selectionCell={{ 'aria-label': 'Select row' }}>
-                            {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
-                        </DataGridRow>
-                    )}
-                </DataGridBody>
-            </DataGrid>
+            <div style={gridStyle} className={'ag-theme-quartz-dark'}>
+                <AgGridReact
+                    ref={gridRef}
+                    rowData={rowData}
+                    columnDefs={columnDefs}
+                    defaultColDef={defaultColDef}
+                    suppressBrowserResizeObserver={true}
+                    onGridReady={function (params) {
+                        const gridApi = params.api;
+                        gridApi.sizeColumnsToFit();
+
+                        gridApi.showLoadingOverlay();
+
+                        if (!conversations[selectedId].disabled) {
+                            const importingResources = importingDocuments
+                                ? importingDocuments.map((document, index) => {
+                                      return {
+                                          id: `in-progress-${index}`,
+                                          chatId: selectedId,
+                                          sourceType: 'N/A',
+                                          name: document,
+                                          sharedBy: 'N/A',
+                                          createdOn: 0,
+                                          size: 0,
+                                      } as ChatMemorySource;
+                                  })
+                                : [];
+                            setResources(importingResources);
+
+                            void chat.getChatMemorySources(selectedId).then((sources) => {
+                                if (sources.length + importingResources.length == 0) {
+                                    gridApi.showNoRowsOverlay();
+                                } else setRowData([...importingResources, ...sources]);
+                            });
+                        }
+                    }}
+                />
+            </div>
         );
     }
 };
 
-//     const {
-//         sort: { getSortDirection, toggleColumnSort, sortColumn },
-//     } = useTableFeatures(
-//         {
-//             columns,
-//             items,
-//         },
-//         [
-//             useTableSort({
-//                 defaultSortState: { sortColumn: 'createdOn', sortDirection: 'descending' },
-//             }),
-//         ],
-//     );
-
-//     if (sortColumn) {
-//         items.sort((a, b) => {
-//             const compare = columns.find((column) => column.columnId === sortColumn)?.compare;
-//             return compare?.(a, b) ?? 0;
-//         });
-//     }
-
-//     return { columns, rows: items };
-// }
-
-// function getAccessString(chatId: string) {
-//     return chatId === EmptyGuid ? 'Global' : 'This chat';
-// }
+function getAccessString(chatId: string) {
+    return chatId === EmptyGuid ? 'Global' : 'This chat';
+}
 
 export function getFileIconByFileExtension(fileName: string, props: FluentIconsProps = {}) {
     const extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.') + 1);

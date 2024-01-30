@@ -8,7 +8,7 @@ import { addAlert, toggleFeatureState } from '../../redux/features/app/appSlice'
 import { setImportingDocumentsToConversation } from '../../redux/features/conversations/conversationsSlice';
 import { AuthHelper } from '../auth/AuthHelper';
 import { AlertType } from '../models/AlertType';
-import { Citation } from '../models/ChatMessage';
+import { Citation, DocumentRemoval } from '../models/ChatMessage';
 import { DocumentImportService } from '../services/DocumentImportService';
 import { useChat } from './useChat';
 
@@ -89,12 +89,23 @@ export const useFile = () => {
         }
     };
 
-    async function deleteDocument(chatId: string, documentId: string): Promise<void> {
+    const deleteDocument = async (
+        documentId: string,
+        fileName: string,
+        chatId: string,
+    ) => {
         try {
+            const removal: DocumentRemoval = {
+                id: documentId,
+                fileName: fileName,
+                chatId: chatId,
+            }
+
+            const removals: DocumentRemoval[] = [removal];
+
             // Call the deleteDocumentAsync method from the DocumentDeleteService
             await documentImportService.deleteDocumentAsync(
-                chatId,
-                documentId,
+                removals,
                 await AuthHelper.getSKaaSAccessToken(instance, inProgress),
             );
         } catch (error) {

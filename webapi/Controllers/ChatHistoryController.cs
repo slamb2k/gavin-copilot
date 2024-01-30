@@ -14,6 +14,7 @@ using CopilotChat.WebApi.Models.Storage;
 using CopilotChat.WebApi.Options;
 using CopilotChat.WebApi.Plugins.Utils;
 using CopilotChat.WebApi.Storage;
+using DocumentFormat.OpenXml.Bibliography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -246,7 +247,6 @@ public class ChatHistoryController : ControllerBase
         if (await this._sessionRepository.TryFindByIdAsync(chatId.ToString()))
         {
             IEnumerable<MemorySource> sources = await this._sourceRepository.FindByChatIdAsync(chatId.ToString());
-
             return this.Ok(sources);
         }
 

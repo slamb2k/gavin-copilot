@@ -155,6 +155,7 @@ export const initialState: AppState = {
         version: '',
         isContentSafetyEnabled: false,
         isDeleteDocumentEnabled: false,
+        isQueryDocumentEnabled: false,
     },
     isMaintenance: false,
 };
