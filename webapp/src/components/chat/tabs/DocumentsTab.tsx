@@ -234,6 +234,8 @@ export const DocumentsTab: React.FC = () => {
                 headerName: 'Filename',
                 field: 'name',
                 minWidth: 400,
+                checkboxSelection: true,
+                flex: 3,
             },
             {
                 headerName: 'Size',
@@ -256,9 +258,11 @@ export const DocumentsTab: React.FC = () => {
                 valueGetter: () => 'Ready',
             },
             {
-                headerName: 'Query',
+                headerName: '',
                 field: 'isQueryable',
-                maxWidth: 90,
+                maxWidth: 60,
+                pinned: 'right',
+                resizable: false,
                 cellRenderer: (params: IDetailCellRendererParams) => {
                     if (params.value === true) {
                         return <Search20Regular />;
@@ -268,8 +272,10 @@ export const DocumentsTab: React.FC = () => {
                 },
             },
             {
-                headerName: 'Delete',
-                maxWidth: 90,
+                headerName: '',
+                maxWidth: 60,
+                pinned: 'right',
+                resizable: false,
                 cellRenderer: () => {
                     return <Delete20Regular />;
                 },
@@ -285,8 +291,6 @@ export const DocumentsTab: React.FC = () => {
             return {
                 editable: false,
                 flex: 1,
-                width: 200,
-                minWidth: 200,
                 filter: true,
                 cellStyle: () => ({
                     display: 'flex',
@@ -296,13 +300,19 @@ export const DocumentsTab: React.FC = () => {
         }, []);
 
         return (
-            <div style={gridStyle} className={'ag-theme-quartz-dark'}>
+            <div style={gridStyle} className={'ag-theme-quartz-auto-dark'}>
                 <AgGridReact
                     ref={gridRef}
                     rowData={rowData}
                     columnDefs={columnDefs}
                     defaultColDef={defaultColDef}
                     suppressBrowserResizeObserver={true}
+                    overlayLoadingTemplate={
+                        '<div aria-live="polite" aria-atomic="true" style="height:100px; width:100px; background: url(https://ag-grid.com/images/ag-grid-loading-spinner.svg) center / contain no-repeat; margin: 0 auto;" aria-label="loading"></div>'
+                    }
+                    overlayNoRowsTemplate={
+                        '<span aria-live="polite" aria-atomic="true" style="padding: 10px; border: 2px solid #666; background: #55AA77">This is a custom \'no rows\' overlay</span>'
+                    }
                     onGridReady={function (params) {
                         const gridApi = params.api;
                         gridApi.sizeColumnsToFit();
