@@ -11,8 +11,6 @@ import {
     MenuTrigger,
     Radio,
     RadioGroup,
-    Spinner,
-    TableRowId,
     Tooltip,
     makeStyles,
     shorthands,
@@ -27,7 +25,7 @@ import {
     GlobeAdd20Regular,
     Search20Regular,
 } from '@fluentui/react-icons';
-import { ColDef, IDetailCellRendererParams } from 'ag-grid-community';
+import { ColDef, GridApi, IDetailCellRendererParams } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react/lib/agGridReact';
 import React, { useMemo, useRef, useState } from 'react';
 import { Constants } from '../../../Constants';
@@ -44,6 +42,8 @@ import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en-AU';
 
 TimeAgo.addDefaultLocale(en);
+
+let gridApi: GridApi<ChatMemorySource>;
 
 // Create formatter (English).
 const timeAgo = new TimeAgo('en-AU');
@@ -84,35 +84,55 @@ export const DocumentsTab: React.FC = () => {
 
     const { serviceInfo } = useAppSelector((state: RootState) => state.app);
     const { conversations, selectedId } = useAppSelector((state: RootState) => state.conversations);
+    const [rowData, setRowData] = useState<ChatMemorySource[]>([]);
 
     const { importingDocuments } = conversations[selectedId];
 
-    const [resources, setResources] = React.useState<ChatMemorySource[]>([]);
-    const [selected, setSelected] = React.useState(new Set<TableRowId>([1]));
     const localDocumentFileRef = useRef<HTMLInputElement | null>(null);
     const globalDocumentFileRef = useRef<HTMLInputElement | null>(null);
 
     const handleDelete = async (documentId: string, fileName: string, chatId: string) => {
         try {
             await fileHandler.deleteDocument(documentId, fileName, chatId);
-            // Update the state immediately after deleting the file
-            setResources((prevResources) => prevResources.filter((resource) => resource.id !== documentId));
         } catch (error) {
             console.error('Failed to delete the file:', error);
         }
     };
 
     const onDeleteClicked = async () => {
-        const promises = Array.from(selected).map((id) =>
-            handleDelete(
-                id.toString(),
-                resources.filter((resource) => resource.id === id)[0].name,
-                resources.filter((resource) => resource.id === id)[0].chatId,
-            ),
-        );
+        gridApi.showLoadingOverlay();
+        const selected = gridApi.getSelectedRows();
+        const promises = Array.from(selected).map((row) => handleDelete(row.id, row.name, row.chatId));
         await Promise.all(promises);
-        setSelected(new Set<TableRowId>());
+        refreshGrid();
     };
+
+    function refreshGrid() {
+        gridApi.sizeColumnsToFit();
+        gridApi.showLoadingOverlay();
+
+        if (!conversations[selectedId].disabled) {
+            const importingResources = importingDocuments
+                ? importingDocuments.map((document, index) => {
+                      return {
+                          id: `in-progress-${index}`,
+                          chatId: selectedId,
+                          sourceType: 'N/A',
+                          name: document,
+                          sharedBy: 'N/A',
+                          createdOn: 0,
+                          size: 0,
+                      } as ChatMemorySource;
+                  })
+                : [];
+
+            void chat.getChatMemorySources(selectedId).then((sources) => {
+                if (sources.length + importingResources.length == 0) {
+                    gridApi.showNoRowsOverlay();
+                } else setRowData([...importingResources, ...sources]);
+            });
+        }
+    }
 
     return (
         <TabView
@@ -130,7 +150,9 @@ export const DocumentsTab: React.FC = () => {
                     style={{ display: 'none' }}
                     multiple={true}
                     onChange={() => {
+                        gridApi.showLoadingOverlay();
                         void fileHandler.handleImport(selectedId, localDocumentFileRef, false);
+                        refreshGrid();
                     }}
                 />
                 <input
@@ -141,7 +163,9 @@ export const DocumentsTab: React.FC = () => {
                     style={{ display: 'none' }}
                     multiple={true}
                     onChange={() => {
+                        gridApi.showLoadingOverlay();
                         void fileHandler.handleImport(selectedId, globalDocumentFileRef, true);
+                        refreshGrid();
                     }}
                 />
                 <Menu>
@@ -199,7 +223,6 @@ export const DocumentsTab: React.FC = () => {
                         Delete
                     </Button>
                 </Tooltip>
-                {importingDocuments && importingDocuments.length > 0 && <Spinner size="tiny" />}
                 {/* Hardcode vector database as we don't support switching vector store dynamically now. */}
                 <div className={classes.vectorDatabase}>
                     <Label size="large">Vector Database:</Label>
@@ -228,8 +251,13 @@ export const DocumentsTab: React.FC = () => {
     function useGrid() {
         const gridRef = useRef(null);
         const gridStyle = useMemo(() => ({ height: '100%', width: '100%' }), []);
-        const [rowData, setRowData] = useState<ChatMemorySource[]>([]);
         const columnDefs: ColDef[] = [
+            {
+                headerName: 'Id',
+                hide: true,
+                field: 'id',
+                minWidth: 400,
+            },
             {
                 headerName: 'Filename',
                 field: 'name',
@@ -263,12 +291,16 @@ export const DocumentsTab: React.FC = () => {
                 maxWidth: 60,
                 pinned: 'right',
                 resizable: false,
-                cellRenderer: (params: IDetailCellRendererParams) => {
-                    if (params.value === true) {
-                        return <Search20Regular />;
-                    } else {
-                        return null;
-                    }
+                cellRenderer: () => {
+                    return (
+                        <Button
+                            appearance="subtle"
+                            icon={<Search20Regular />}
+                            onClick={() => {
+                                alert('Not implemented yet');
+                            }}
+                        />
+                    );
                 },
             },
             {
@@ -276,8 +308,23 @@ export const DocumentsTab: React.FC = () => {
                 maxWidth: 60,
                 pinned: 'right',
                 resizable: false,
-                cellRenderer: () => {
-                    return <Delete20Regular />;
+                autoHeight: true,
+                cellRenderer: (params: IDetailCellRendererParams) => {
+                    return (
+                        <Button
+                            appearance="subtle"
+                            icon={<Delete20Regular />}
+                            onClick={async () => {
+                                gridApi.showLoadingOverlay();
+                                await handleDelete(
+                                    (params.data as { id: string }).id,
+                                    (params.data as { name: string }).name,
+                                    (params.data as { chatid: string }).chatid,
+                                );
+                                refreshGrid();
+                            }}
+                        />
+                    );
                 },
                 cellStyle: () => ({
                     display: 'flex',
@@ -307,40 +354,16 @@ export const DocumentsTab: React.FC = () => {
                     columnDefs={columnDefs}
                     defaultColDef={defaultColDef}
                     suppressBrowserResizeObserver={true}
+                    rowSelection="multiple"
                     overlayLoadingTemplate={
                         '<div aria-live="polite" aria-atomic="true" style="height:100px; width:100px; background: url(https://ag-grid.com/images/ag-grid-loading-spinner.svg) center / contain no-repeat; margin: 0 auto;" aria-label="loading"></div>'
                     }
                     overlayNoRowsTemplate={
-                        '<span aria-live="polite" aria-atomic="true" style="padding: 10px; border: 2px solid #666; background: #55AA77">This is a custom \'no rows\' overlay</span>'
+                        '<span aria-live="polite" aria-atomic="true" style="padding: 10px; border: 2px solid #666; background: #55AA77">No documents found.</span>'
                     }
-                    onGridReady={function (params) {
-                        const gridApi = params.api;
-                        gridApi.sizeColumnsToFit();
-
-                        gridApi.showLoadingOverlay();
-
-                        if (!conversations[selectedId].disabled) {
-                            const importingResources = importingDocuments
-                                ? importingDocuments.map((document, index) => {
-                                      return {
-                                          id: `in-progress-${index}`,
-                                          chatId: selectedId,
-                                          sourceType: 'N/A',
-                                          name: document,
-                                          sharedBy: 'N/A',
-                                          createdOn: 0,
-                                          size: 0,
-                                      } as ChatMemorySource;
-                                  })
-                                : [];
-                            setResources(importingResources);
-
-                            void chat.getChatMemorySources(selectedId).then((sources) => {
-                                if (sources.length + importingResources.length == 0) {
-                                    gridApi.showNoRowsOverlay();
-                                } else setRowData([...importingResources, ...sources]);
-                            });
-                        }
+                    onGridReady={function (params: { api: GridApi<ChatMemorySource> }) {
+                        gridApi = params.api;
+                        refreshGrid();
                     }}
                 />
             </div>
