@@ -28,18 +28,15 @@ export class DocumentImportService extends BaseService {
         );
     };
 
-    public deleteDocumentAsync = async (
-        removals: DocumentRemoval[],
-        accessToken: string) => {
-
+    public deleteDocumentAsync = async (removals: DocumentRemoval[], accessToken: string) => {
         const payload = {
             DocumentRemovals: removals.map((removal) => {
                 return {
                     Id: removal.id,
                     FileName: removal.fileName,
                     ChatId: removal.chatId,
-                }
-            })
+                };
+            }),
         };
 
         try {
@@ -51,7 +48,7 @@ export class DocumentImportService extends BaseService {
                     Authorization: `Bearer ${accessToken}`,
                 },
                 body: JSON.stringify(payload),
-            })
+            });
         } catch (e: any) {
             let additionalErrorMsg = '';
             if (e instanceof TypeError) {

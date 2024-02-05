@@ -89,17 +89,13 @@ export const useFile = () => {
         }
     };
 
-    const deleteDocument = async (
-        documentId: string,
-        fileName: string,
-        chatId: string,
-    ) => {
+    const deleteDocument = async (documentId: string, fileName: string, chatId: string) => {
         try {
             const removal: DocumentRemoval = {
                 id: documentId,
                 fileName: fileName,
                 chatId: chatId,
-            }
+            };
 
             const removals: DocumentRemoval[] = [removal];
 
@@ -111,7 +107,7 @@ export const useFile = () => {
         } catch (error) {
             console.error('Failed to delete the file:', error);
         }
-    }
+    };
 
     const getContentSafetyStatus = async () => {
         try {
