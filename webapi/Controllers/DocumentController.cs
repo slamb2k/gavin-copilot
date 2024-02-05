@@ -289,8 +289,6 @@ public class DocumentController : ControllerBase
         return importResults.ToArray();
     }
 
-    private string[] QueryableFileTypes = new[] { ".xls", ".xlsx", ".csv", ".tsv" };
-
     private async Task<ImportResult> ImportDocumentAsync(IFormFile formFile, IKernelMemory memoryClient, Guid chatId)
     {
         this._logger.LogInformation("Importing document {0}", formFile.FileName);
