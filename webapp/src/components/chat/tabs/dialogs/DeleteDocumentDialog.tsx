@@ -1,3 +1,4 @@
+import { useMsal } from '@azure/msal-react';
 import { Button } from '@fluentui/react-button';
 import { Tooltip, makeStyles } from '@fluentui/react-components';
 import {
@@ -9,11 +10,11 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@fluentui/react-dialog';
-import { Delete16 } from '../../../shared/BundledIcons';
-import { DocumentImportService } from '../../../../libs/services/DocumentImportService';
+import { Delete20Regular } from '@fluentui/react-icons';
 import { AuthHelper } from '../../../../libs/auth/AuthHelper';
-import { useMsal } from '@azure/msal-react';
 import { AlertType } from '../../../../libs/models/AlertType';
+import { DocumentRemoval } from '../../../../libs/models/ChatMessage';
+import { DocumentImportService } from '../../../../libs/services/DocumentImportService';
 import { useAppDispatch } from '../../../../redux/app/hooks';
 import { addAlert } from '../../../../redux/features/app/appSlice';
 
@@ -41,8 +42,17 @@ export const DeleteDocumentDialog: React.FC<IDeleteDocumentProps> = ({ chatId, d
     const onDeleteDocument = async () => {
         console.log(chatId);
         console.log(documentId);
+
+        const removal: DocumentRemoval = {
+            id: documentId,
+            fileName: documentName,
+            chatId: chatId,
+        };
+
+        const removals: DocumentRemoval[] = [removal];
+
         await documentImportService
-            .deleteDocumentAsync(chatId, documentId, await AuthHelper.getSKaaSAccessToken(instance, inProgress))
+            .deleteDocumentAsync(removals, await AuthHelper.getSKaaSAccessToken(instance, inProgress))
             .catch((e: any) => {
                 const errorDetails = (e as Error).message.includes('Failed to delete resources for chat id')
                     ? "Some or all resources associated with this chat couldn't be deleted. Please try again."
@@ -60,7 +70,7 @@ export const DeleteDocumentDialog: React.FC<IDeleteDocumentProps> = ({ chatId, d
         <Dialog modalType="alert">
             <DialogTrigger>
                 <Tooltip content={'Delete chat session'} relationship="label">
-                    <Button icon={<Delete16 />} appearance="transparent" aria-label="Edit" />
+                    <Button icon={<Delete20Regular />} appearance="transparent" aria-label="Edit" />
                 </Tooltip>
             </DialogTrigger>
             <DialogSurface className={classes.root}>

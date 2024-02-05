@@ -6,7 +6,6 @@ using System.Data;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using CopilotChat.WebApi.Auth;
 using CopilotChat.WebApi.Extensions;
@@ -38,7 +37,7 @@ namespace CopilotChat.WebApi.Controllers;
 public class DocumentController : ControllerBase
 {
     private const string GlobalDocumentUploadedClientCall = "GlobalDocumentUploaded";
-    private const string GlobalDocumentDeletedClientCall = "GlobalDocumentDeleted";
+    private const string GlobalDocumentRemovedClientCall = "GlobalDocumentRemoved";
     private const string ReceiveMessageClientCall = "ReceiveMessage";
 
     private readonly ILogger<DocumentController> _logger;
@@ -126,51 +125,52 @@ public class DocumentController : ControllerBase
     }
 
     /// <summary>
-    /// Service API for removing a document.
-    /// Documents imported through this route will be considered as global documents.
+    /// Service API for removing a global document.
     /// </summary>
-    [Route("documents/{documentId}")]
+    [Route("documents")]
     [HttpDelete]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public Task<IActionResult> DocumentRemoveAsync(
+    public async Task<IActionResult> DocumentRemoveAsync(
         [FromServices] IKernelMemory memoryClient,
         [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
-        [FromRoute] Guid documentId,
-        CancellationToken cancellationToken)
+        [FromBody] DocumentRemovalForm documentRemovalForm)
     {
-        return this.DocumentRemoveAsync(
-            memoryClient,
-            messageRelayHubContext,
-            DocumentScopes.Global,
-            DocumentMemoryOptions.GlobalDocumentChatId,
-            documentId,
-            cancellationToken);
+        try
+        {
+            await this.ValidateDocumentRemovalFormAsync(documentRemovalForm);
+        }
+        catch (ArgumentException ex)
+        {
+            return this.BadRequest(ex.Message);
+        }
+
+        this._logger.LogInformation("Removing {0} document(s) from memory...", documentRemovalForm.DocumentRemovals.Count());
+
+        // Pre-create chat-message
+        DocumentRemovalResponse documentRemovalResponse = new();
+
+        var removalResults = await this.RemoveDocumentsAsync(memoryClient, documentRemovalForm, documentRemovalResponse);
+
+        // Since the document removal response may contain documents from multiple chats, we will
+        // just broadcast a global message and for the moment will not create a chat message for
+        // each chat.
+
+        await messageRelayHubContext.Clients.All.SendAsync(
+                            GlobalDocumentRemovedClientCall,
+                            documentRemovalResponse.ToFormattedStringNamesOnly(),
+                            this._authInfo.Name
+                            );
+
+        return this.Ok(removalResults);
     }
 
     /// <summary>
-    /// Service API for removing a document.
+    /// Service API for downloading a referenced document.
     /// </summary>
-    [Route("chats/{chatId}/documents/{documentId}")]
-    [HttpDelete]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public Task<IActionResult> DocumentRemoveAsync(
-        [FromServices] IKernelMemory memoryClient,
-        [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
-        [FromRoute] Guid chatId,
-        [FromRoute] Guid documentId,
-        CancellationToken cancellationToken)
-    {
-        return this.DocumentRemoveAsync(
-            memoryClient,
-            messageRelayHubContext,
-            DocumentScopes.Chat,
-            chatId,
-            documentId,
-            cancellationToken);
-    }
-
+    /// <param name="contentStorage">Where the document memory is stored.</param>
+    /// <param name="citation">The info about the citation to help find it.</param>
+    /// <returns>The document contents for display or download.</returns>
     [Route("documents/getcitation")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -203,6 +203,8 @@ public class DocumentController : ControllerBase
             return this.NotFound($"Document not found: {ex.Message}");
         }
     }
+
+    #region Private
 
     private async Task<IActionResult> DocumentImportAsync(
         IKernelMemory memoryClient,
@@ -261,124 +263,6 @@ public class DocumentController : ControllerBase
         return this.Ok(chatMessage);
     }
 
-    private async Task<IActionResult> DocumentRemoveAsync(
-        IKernelMemory memoryClient,
-        IHubContext<MessageRelayHub> messageRelayHubContext,
-        DocumentScopes documentScope,
-        Guid chatId,
-        Guid documentId,
-        CancellationToken cancellationToken)
-    {
-        if (!this._options.AllowDocumentRemoval)
-        {
-            return this.BadRequest("Document removal not enabled.");
-        }
-
-        // First remove the document embeddings.
-        await memoryClient.RemoveDocumentAsync(this._promptOptions.DocumentMemoryName, documentId.ToString(), cancellationToken);
-
-        // $$$ REMOVE CITED MESSAGES ???
-
-        // Then remove the memory source.  This ensures that delete may be re-attempted on exception.
-        await this._sourceRepository.DeleteAsync(documentId.ToString(), chatId.ToString());
-
-        return this.Ok();
-    }
-
-    // [Route("documents/{documentId}")]
-    // [HttpDelete]
-    // [ProducesResponseType(StatusCodes.Status200OK)]
-    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    // public Task<IActionResult> DocumentDeleteAsync(
-    // [FromServices] IKernelMemory memoryClient,
-    // [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
-    // [FromRoute] Guid documentId)
-    // {
-    //     return this.DocumentDeletionAsync(
-    //         memoryClient,
-    //         messageRelayHubContext,
-    //         DocumentScopes.Global,
-    //         DocumentMemoryOptions.GlobalDocumentChatId,
-    //         documentId
-    //     );
-    // }
-
-    // [Route("chats/{chatId}/documents/{documentId}")]
-    // [HttpDelete]
-    // [ProducesResponseType(StatusCodes.Status200OK)]
-    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    // public Task<IActionResult> DocumentDeleteAsync(
-    // [FromServices] IKernelMemory memoryClient,
-    // [FromServices] IHubContext<MessageRelayHub> messageRelayHubContext,
-    // [FromRoute] Guid chatId,
-    // [FromRoute] Guid documentId)
-    // {
-    //     return this.DocumentDeletionAsync(
-    //         memoryClient,
-    //         messageRelayHubContext,
-    //         DocumentScopes.Chat,
-    //         chatId,
-    //         documentId
-    //     );
-    // }
-
-    private async Task<IActionResult> DocumentDeletionAsync(
-        IKernelMemory memoryClient,
-        IHubContext<MessageRelayHub> messageRelayHubContext,
-        DocumentScopes documentScope,
-        Guid chatId,
-        Guid memoryId)
-    {
-        try
-        {
-            await this.ValidateDocumentDeletionAsync(chatId, memoryId);
-        }
-        catch (ArgumentException ex)
-        {
-            return this.BadRequest(ex.Message);
-        }
-
-        this._logger.LogInformation("Deleting memory: {0}...", memoryId);
-
-        // Pre-create chat-message
-        DocumentMessageContent documentMessageContent = new();
-
-        await this.DeleteDocumentAsync(memoryId, memoryClient, chatId);
-
-        var chatMessage = await this.TryCreateDocumentDeletionMessage(chatId, documentMessageContent);
-
-        if (chatMessage == null)
-        {
-            this._logger.LogWarning("Failed to create document deletion message - {Content}", documentMessageContent.ToString());
-            return this.BadRequest();
-        }
-
-        // Broadcast the document uploaded event to other users.
-        if (documentScope == DocumentScopes.Chat)
-        {
-            // If chat message isn't created, it is still broadcast and visible in the documents tab.
-            // The chat message won't, however, be displayed when the chat is freshly rendered.
-
-            var userId = this._authInfo.UserId;
-            await messageRelayHubContext.Clients.Group(chatId.ToString())
-                .SendAsync(ReceiveMessageClientCall, chatId, userId, chatMessage);
-
-            this._logger.LogInformation("Local memory deletion chat message: {0}", chatMessage.ToString());
-
-            return this.Ok(chatMessage);
-        }
-
-        await messageRelayHubContext.Clients.All.SendAsync(
-            GlobalDocumentDeletedClientCall,
-            memoryId.ToString(),
-            this._authInfo.Name
-        );
-
-        this._logger.LogInformation("Global memory deletion chat message: {0}", chatMessage.ToString());
-
-        return this.Ok(chatMessage);
-    }
-
     private async Task<IList<ImportResult>> ImportDocumentsAsync(IKernelMemory memoryClient, Guid chatId, DocumentImportForm documentImportForm, DocumentMessageContent messageContent)
     {
         IEnumerable<ImportResult> importResults = new List<ImportResult>();
@@ -413,7 +297,7 @@ public class DocumentController : ControllerBase
         MemorySource memorySource = new(
             chatId.ToString(),
             formFile.FileName,
-            this._authInfo.UserId,
+            this._authInfo.Name,
             MemorySourceType.File,
             formFile.Length,
             hyperlink: null
@@ -455,23 +339,52 @@ public class DocumentController : ControllerBase
         }
     }
 
-    private async Task DeleteDocumentAsync(Guid memoryId, IKernelMemory memoryClient, Guid chatId)
+    private async Task<IList<RemoveResult>> RemoveDocumentsAsync(IKernelMemory memoryClient, DocumentRemovalForm documentRemovalForm, DocumentRemovalResponse removalResponse)
     {
-        this._logger.LogInformation("Deleting document {0}", memoryId);
+        IEnumerable<RemoveResult> removeResults = new List<RemoveResult>();
 
-        try
-        {
-            await memoryClient.DeleteDocumentAsync(
-                documentId: memoryId.ToString(),
-                index: this._promptOptions.MemoryIndexName);
-        }
-        catch (Exception ex) when (ex is not SystemException)
-        {
-            this._logger.LogError(ex, "Failed to delete document {0}", memoryId);
-        }
+        await Task.WhenAll(
+            documentRemovalForm.DocumentRemovals.Select(
+                async documentRemoval =>
+                    await this.RemoveDocumentAsync(memoryClient, documentRemoval).ContinueWith(
+                        task =>
+                        {
+                            var removeResult = task.Result;
+                            if (removeResult != null)
+                            {
+                                removalResponse.AddDocument(
+                                    documentRemoval.FileName,
+                                    removeResult.IsSuccessful);
+
+                                removeResults = removeResults.Append(removeResult);
+                            }
+                        },
+                        TaskScheduler.Default)));
+
+        return removeResults.ToArray();
     }
 
-    #region Private
+    private async Task<RemoveResult> RemoveDocumentAsync(
+        IKernelMemory memoryClient,
+        DocumentRemoval documentRemoval)
+    {
+        this._logger.LogInformation("Removing document memory: {0}", documentRemoval.FileName);
+
+        // Pre-create chat-message
+        DocumentRemovalResponse documentRemovalResponse = new();
+
+        // First remove the document embeddings.
+        await memoryClient.RemoveDocumentAsync(this._promptOptions.MemoryIndexName, documentRemoval.Id.ToString());
+
+        // $$$ REMOVE CITED MESSAGES ???
+
+        // Then remove the memory source.  This ensures that delete may be re-attempted on exception.
+        await this._sourceRepository.DeleteAsync(documentRemoval.Id.ToString(), documentRemoval.ChatId.ToString());
+
+        this._logger.LogInformation("Removed document memory successfully: {0}", documentRemoval.FileName);
+
+        return RemoveResult.Success;
+    }
 
     /// <summary>
     /// A class to store a document import results.
@@ -501,6 +414,41 @@ public class DocumentController : ControllerBase
         /// Create a new instance of the <see cref="ImportResult"/> class representing a failed import.
         /// </summary>
         public static ImportResult Fail { get; } = new(string.Empty);
+    }
+
+    /// <summary>
+    /// A class to store a document removal results.
+    /// </summary>
+    private sealed class RemoveResult
+    {
+        /// <summary>
+        /// A boolean indicating whether the removal is successful.
+        /// </summary>
+        public bool IsSuccessful { get; private set; }
+
+        ///// <summary>
+        ///// The name of the collection that the document was removed from.
+        ///// </summary>
+        //public string CollectionName { get; set; }
+
+        /// <summary>
+        /// Create a new instance of the <see cref="RemoveResult"/> class.
+        /// </summary>
+        /// <param name="collectionName">The name of the collection that the document was removed from.</param>
+        public RemoveResult(bool isRemoved)
+        {
+            this.IsSuccessful = isRemoved;
+        }
+
+        /// <summary>
+        /// Create a new instance of the <see cref="RemoveResult"/> class representing a failed document removal.
+        /// </summary>
+        public static RemoveResult Fail { get; } = new(false);
+
+        /// <summary>
+        /// Create a new instance of the <see cref="RemoveResult"/> class representing a successful document removal.
+        /// </summary>
+        public static RemoveResult Success { get; } = new(true);
     }
 
     /// <summary>
@@ -578,33 +526,36 @@ public class DocumentController : ControllerBase
     }
 
     /// <summary>
-    /// Validates a document memory deletion.
+    /// Validates the document removal form.
     /// </summary>
-    /// <param name="chatId">If the document is specific to a chat, this will be the Guid or Guid.Empty if the memory is global.</param>
-    /// <param name="documentId">The Guid representing the document and memory.</param>
+    /// <param name="documentRemovalForm">The document removal form.</param>
     /// <returns></returns>
     /// <exception cref="ArgumentException">Throws ArgumentException if validation fails.</exception>
-    private async Task ValidateDocumentDeletionAsync(Guid chatId, Guid documentId)
+    private async Task ValidateDocumentRemovalFormAsync(DocumentRemovalForm documentRemovalForm)
     {
-        // Make sure the user has access to the chat session if the document is uploaded to a chat session.
-        if ((chatId != Guid.Empty)
-            && !(await this.UserHasAccessToChatAsync(this._authInfo.UserId, chatId)))
+        var documentRemovals = documentRemovalForm.DocumentRemovals;
+
+        if (!documentRemovals.Any())
         {
-            throw new ArgumentException("User does not have access to the chat session.");
+            throw new ArgumentException("No documents were removed.");
         }
 
-        if (documentId == Guid.Empty)
+        // Loop through the uploaded files and validate them before removing.
+        foreach (var removal in documentRemovals)
         {
-            throw new ArgumentException("Invalid document id specified.");
+            // Make sure the user has access to the chat session if the document is uploaded to a chat session.
+            if (removal.DocumentScope == DocumentScopes.Chat
+                    && !(await this.UserHasAccessToChatAsync(this._authInfo.UserId, removal.ChatId)))
+            {
+                throw new ArgumentException("User does not have access to the chat session is associated with this document memory.");
+            }
         }
-
-        // TODO: Confirm the document exists in memory.
     }
 
     /// <summary>
-    /// Validates the document import form.
+    /// Validates the document status form.
     /// </summary>
-    /// <param name="documentStatusForm">The document import form.</param>
+    /// <param name="documentStatusForm">The document status form.</param>
     /// <returns></returns>
     /// <exception cref="ArgumentException">Throws ArgumentException if validation fails.</exception>
     private async Task ValidateDocumentStatusFormAsync(DocumentStatusForm documentStatusForm)
@@ -724,24 +675,23 @@ public class DocumentController : ControllerBase
     /// <param name="chatId">The target chat-id</param>
     /// <param name="messageContent">The document message content</param>
     /// <returns>A ChatMessage object if successful, null otherwise</returns>
-    private async Task<CopilotChatMessage?> TryCreateDocumentDeletionMessage(
-        Guid chatId,
-        DocumentMessageContent messageContent)
+    private Task<IEnumerable<CopilotChatMessage>> TryCreateDocumentRemovalMessage(
+        DocumentRemovalResponse documentRemovalResponse)
     {
-        var chatMessage = CopilotChatMessage.CreateDocumentMessage(
-            this._authInfo.UserId,
-            this._authInfo.Name, // User name
-            chatId.ToString(),
-            messageContent);
+        // TODO: Probably need to create multiple chat messages here as the document removal response
+        // may contain documents from multiple chats. Will have to loop through the results and send
+        // a message to each chat.
 
         try
         {
-            await this._messageRepository.CreateAsync(chatMessage);
-            return chatMessage;
+            //await this._messageRepository.CreateAsync(chatMessage);
+            //return chatMessage;
+
+            return (Task<IEnumerable<CopilotChatMessage>>)Enumerable.Empty<CopilotChatMessage>();
         }
         catch (Exception ex) when (ex is ArgumentOutOfRangeException)
         {
-            return null;
+            return (Task<IEnumerable<CopilotChatMessage>>)Enumerable.Empty<CopilotChatMessage>();
         }
     }
 

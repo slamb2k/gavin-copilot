@@ -78,6 +78,7 @@ public class ServiceInfoController : ControllerBase
                 Version = assemblyFileVersion,
                 IsContentSafetyEnabled = this._contentSafetyOptions.Enabled,
                 IsDeleteDocumentEnabled = this._documentOptions.AllowDocumentRemoval,
+                IsQueryDocumentEnabled = this._documentOptions.AllowDocumentQuerying,
             };
 
         return this.Ok(response);

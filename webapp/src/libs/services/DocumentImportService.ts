@@ -1,6 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 
-import { Citation, IChatMessage } from '../models/ChatMessage';
+import { Citation, DocumentRemoval, IChatMessage } from '../models/ChatMessage';
 import { ServiceInfo } from '../models/ServiceInfo';
 import { BaseService } from './BaseService';
 
@@ -28,14 +28,36 @@ export class DocumentImportService extends BaseService {
         );
     };
 
-    public deleteDocumentAsync = async (chatId: string, documentId: string, accessToken: string) => {
-        return await this.getResponseAsync<string>(
-            {
-                commandPath: chatId ? `documents/${documentId}` : `chats/${chatId}/documents/${documentId}`,
+    public deleteDocumentAsync = async (removals: DocumentRemoval[], accessToken: string) => {
+        const payload = {
+            DocumentRemovals: removals.map((removal) => {
+                return {
+                    Id: removal.id,
+                    FileName: removal.fileName,
+                    ChatId: removal.chatId,
+                };
+            }),
+        };
+
+        try {
+            const requestUrl = new URL('documents', this.serviceUrl);
+            await fetch(requestUrl, {
                 method: 'DELETE',
-            },
-            accessToken,
-        );
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify(payload),
+            });
+        } catch (e: any) {
+            let additionalErrorMsg = '';
+            if (e instanceof TypeError) {
+                // fetch() will reject with a TypeError when a network error is encountered.
+                additionalErrorMsg =
+                    '\n\nPlease check that your backend is running and that it is accessible by the app';
+            }
+            throw Object.assign(new Error(`${e as string} ${additionalErrorMsg}`));
+        }
     };
 
     public getContentSafetyStatusAsync = async (accessToken: string): Promise<boolean> => {

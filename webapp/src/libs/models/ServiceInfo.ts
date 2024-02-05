@@ -16,4 +16,5 @@ export interface ServiceInfo {
     version: string;
     isContentSafetyEnabled: boolean;
     isDeleteDocumentEnabled: boolean;
+    isQueryDocumentEnabled: boolean;
 }

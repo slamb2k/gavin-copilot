@@ -246,7 +246,6 @@ public class ChatHistoryController : ControllerBase
         if (await this._sessionRepository.TryFindByIdAsync(chatId.ToString()))
         {
             IEnumerable<MemorySource> sources = await this._sourceRepository.FindByChatIdAsync(chatId.ToString());
-
             return this.Ok(sources);
         }
 
