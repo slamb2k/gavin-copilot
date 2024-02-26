@@ -43,7 +43,7 @@
     "@fluentui/react-button": "^9.3.50",
     "@fluentui/react-dialog": "^9.7.10",
     "@fluentui/react-input": "^9.4.48",
-    "@fluentui/react-tooltip": "^9.3.17",
+    "@fluentui/react-tooltip": "^9.4.17",
     "@types/debug": "^4.1.12",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.43",
