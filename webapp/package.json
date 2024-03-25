@@ -41,7 +41,7 @@
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@fluentui/react-button": "^9.3.50",
-    "@fluentui/react-dialog": "^9.7.10",
+    "@fluentui/react-dialog": "^9.9.15",
     "@fluentui/react-input": "^9.4.48",
     "@fluentui/react-tooltip": "^9.3.17",
     "@types/debug": "^4.1.12",
